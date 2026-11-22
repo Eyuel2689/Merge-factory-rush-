@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #f2f6ff;
+    background-image:
+      radial-gradient(at 12% 8%, rgba(56, 189, 248, 0.24) 0px, transparent 50%),
+      radial-gradient(at 88% 12%, rgba(251, 191, 36, 0.22) 0px, transparent 48%),
+      radial-gradient(at 84% 85%, rgba(52, 211, 153, 0.20) 0px, transparent 48%),
+      radial-gradient(at 14% 88%, rgba(167, 139, 250, 0.16) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: #0f172a;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  .font-mono-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.3)); }
+  50% { filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6)); }
+}
+
+@keyframes mergePop {
+  0% { transform: scale(0.92); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+@keyframes scaleIn {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+.animate-merge-pop {
+  animation: mergePop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-char-bob,
+.animate-item-float,
+.animate-item-float-delayed,
+.animate-check-pop {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-glow,
+  .animate-merge-pop,
+  .animate-scaleIn,
+  .animate-pulse,
+  .animate-spin {
+    animation: none !important;
+  }
+}

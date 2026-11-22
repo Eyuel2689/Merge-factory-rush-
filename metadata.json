@@ -1,0 +1,6 @@
+{
+  "name": "Merge Factory 2D",
+  "description": "A polished 2D merge puzzle and factory management game with items, orders, machines, workers, and upgrades.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
