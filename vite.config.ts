@@ -5,7 +5,15 @@ import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
+  const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+  const isUserSite = repoName?.toLowerCase().endsWith('.github.io');
+  const base =
+    process.env.GITHUB_PAGES === 'true' && repoName && !isUserSite
+      ? `/${repoName}/`
+      : '/';
+
   return {
+    base,
     plugins: [
       react(),
       tailwindcss(),
@@ -13,7 +21,7 @@ export default defineConfig(() => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
-          id: '/',
+          id: base,
           name: 'Merge Factory 2D',
           short_name: 'MergeFactory',
           description:
@@ -22,24 +30,24 @@ export default defineConfig(() => {
           background_color: '#F2F6FF',
           display: 'standalone',
           orientation: 'portrait',
-          start_url: '/',
-          scope: '/',
+          start_url: base,
+          scope: base,
           categories: ['games', 'puzzle', 'simulation'],
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: `${base}pwa-192x192.png`,
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-512x512.png',
+              src: `${base}pwa-512x512.png`,
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: `${base}pwa-maskable-512x512.png`,
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
