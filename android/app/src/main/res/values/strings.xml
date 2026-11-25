@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Merge Factory 2D</string>
+    <string name="title_activity_main">Merge Factory 2D</string>
+    <string name="package_name">com.mergefactory.game</string>
+    <string name="custom_url_scheme">com.mergefactory.game</string>
+    <string name="admob_app_id">ca-app-pub-7953133690157762~2151559499</string>
+</resources>

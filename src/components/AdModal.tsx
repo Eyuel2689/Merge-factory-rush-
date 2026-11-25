@@ -1,5 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, X, CheckCircle2, PlayCircle, Lock, Zap, Coins, Film, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  ShieldCheck,
+  X,
+  CheckCircle2,
+  PlayCircle,
+  Lock,
+  Zap,
+  Coins,
+  Film,
+  Sparkles,
+  RefreshCw,
+  Loader2
+} from 'lucide-react';
+import {
+  isNativeAdMob,
+  showNativeInterstitialAd,
+  showNativeRewardedAd
+} from '../services/admob';
 
 export type AdRewardType = 'energy' | 'coins' | 'double_earnings' | 'consumable_refill' | 'interstitial';
 
@@ -13,36 +30,61 @@ interface AdModalProps {
 const AD_DURATION_SECONDS = 4;
 
 export const AdModal: React.FC<AdModalProps> = ({ rewardType, adDetail, onComplete, onClose }) => {
+  const nativeMode = isNativeAdMob();
   const totalSeconds = rewardType === 'interstitial' ? 3 : AD_DURATION_SECONDS;
+
   const [countdown, setCountdown] = useState(totalSeconds);
-  const [adLoaded, setAdLoaded] = useState(false);
   const [hasClaimed, setHasClaimed] = useState(false);
+  const [nativeStatus, setNativeStatus] = useState<'loading' | 'error' | 'cancelled'>('loading');
+  const [nativeErrorMsg, setNativeErrorMsg] = useState<string>('');
+
   const onCompleteRef = useRef(onComplete);
+  const onCloseRef = useRef(onClose);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
-  }, [onComplete]);
+    onCloseRef.current = onClose;
+  }, [onComplete, onClose]);
 
-  // Check for real AdMob / Web Ad integration in window
-  useEffect(() => {
-    const win = window as any;
-    if (win.admob || win.googletag || win.google) {
-      setAdLoaded(true);
-      try {
-        if (win.admob?.showRewardedAd) {
-          win.admob.showRewardedAd({
-            onRewarded: () => handleClaimReward()
-          });
-        }
-      } catch (e) {
-        console.warn('AdMob SDK call attempted:', e);
-      }
-    }
-  }, []);
-
-  // Countdown timer: players watch the ad until countdown reaches 0
-  useEffect(() => {
+  const handleClaimReward = useCallback(() => {
     if (hasClaimed) return;
+    setHasClaimed(true);
+    setTimeout(() => {
+      onCompleteRef.current();
+    }, 150);
+  }, [hasClaimed]);
+
+  const runNativeAd = useCallback(async () => {
+    setNativeStatus('loading');
+    setNativeErrorMsg('');
+
+    if (rewardType === 'interstitial') {
+      await showNativeInterstitialAd();
+      onCompleteRef.current();
+      return;
+    }
+
+    const result = await showNativeRewardedAd();
+    if (result.completed) {
+      onCompleteRef.current();
+      return;
+    }
+
+    setNativeStatus(result.cancelled ? 'cancelled' : 'error');
+    setNativeErrorMsg(
+      result.error || 'Ad could not be loaded right now. Please try again.'
+    );
+  }, [rewardType]);
+
+  // Native Android AdMob path
+  useEffect(() => {
+    if (!nativeMode) return;
+    void runNativeAd();
+  }, [nativeMode, runNativeAd]);
+
+  // Web / PWA fallback countdown path
+  useEffect(() => {
+    if (nativeMode || hasClaimed) return;
 
     if (countdown > 0) {
       const timer = setTimeout(() => {
@@ -52,21 +94,79 @@ export const AdModal: React.FC<AdModalProps> = ({ rewardType, adDetail, onComple
     } else {
       handleClaimReward();
     }
-  }, [countdown, hasClaimed]);
-
-  const handleClaimReward = () => {
-    if (hasClaimed) return;
-    setHasClaimed(true);
-    setTimeout(() => {
-      onCompleteRef.current();
-    }, 150);
-  };
+  }, [nativeMode, countdown, hasClaimed, handleClaimReward]);
 
   const isInterstitial = rewardType === 'interstitial';
   const isDoubleEarnings = rewardType === 'double_earnings';
   const isConsumableRefill = rewardType === 'consumable_refill';
   const canClaimEarly = isInterstitial;
   const progressPct = Math.min(100, Math.round(((totalSeconds - countdown) / totalSeconds) * 100));
+
+  if (nativeMode) {
+    return (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none">
+        <div className="bg-white border border-indigo-200 rounded-2xl p-6 max-w-sm w-full text-slate-900 text-center shadow-2xl flex flex-col items-center gap-4 animate-scaleIn relative">
+          {nativeStatus !== 'loading' && (
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-lg p-1.5 transition cursor-pointer border border-slate-200"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase text-emerald-700 border border-emerald-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Google AdMob</span>
+          </div>
+
+          {nativeStatus === 'loading' ? (
+            <>
+              <div className="w-14 h-14 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600">
+                <Loader2 className="w-7 h-7 animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {isInterstitial ? 'Preparing Transition...' : 'Loading Rewarded Ad...'}
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">
+                  Connecting to AdMob network. Please wait a moment.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-14 h-14 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700">
+                <PlayCircle className="w-7 h-7" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900">
+                  {nativeStatus === 'cancelled' ? 'Reward Not Claimed' : 'Ad Unavailable'}
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">{nativeErrorMsg}</p>
+              </div>
+              <div className="flex items-center gap-2 w-full">
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => void runNativeAd()}
+                  className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition shadow-sm"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Try Again</span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-slate-900/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none">
@@ -89,7 +189,7 @@ export const AdModal: React.FC<AdModalProps> = ({ rewardType, adDetail, onComple
 
         <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase text-emerald-700 border border-emerald-200">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-          <span>{adLoaded ? 'Verified Ad Network' : 'Sponsored Partner Brief'}</span>
+          <span>Sponsored Partner Brief</span>
         </div>
 
         <div

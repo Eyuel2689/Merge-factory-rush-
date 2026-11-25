@@ -16,6 +16,7 @@ import { OfflineModal } from './components/OfflineModal';
 import { AdModal, AdRewardType } from './components/AdModal';
 import { FloatingText } from './components/FloatingText';
 import { OfflineIndicator } from './components/PWAInstallButton';
+import { initAdMob } from './services/admob';
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState>(() => createInitialState());
@@ -50,6 +51,8 @@ export default function App() {
     if (offlineCoins > 0 && offlineSeconds > 10) {
       setOfflineData({ coins: offlineCoins, seconds: offlineSeconds });
     }
+
+    void initAdMob();
   }, []);
 
   // Periodic Auto-Save (every 2s) & On Window Unload

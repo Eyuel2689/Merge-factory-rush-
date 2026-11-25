@@ -1,0 +1,99 @@
+name: Build Android Release AAB
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-aab:
+    name: Build Signed Play Store .aab
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Configure Android signing keystore
+        env:
+          SECRET_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          SECRET_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          SECRET_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          SECRET_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          mkdir -p aab-output
+          if [ -n "$SECRET_KEYSTORE_B64" ] && [ -n "$SECRET_STORE_PASSWORD" ] && [ -n "$SECRET_KEY_ALIAS" ]; then
+            echo "$SECRET_KEYSTORE_B64" | base64 --decode > android/app/release.jks
+            echo "RELEASE_STORE_FILE=release.jks" >> "$GITHUB_ENV"
+            echo "RELEASE_STORE_PASSWORD=$SECRET_STORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_ALIAS=$SECRET_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=${SECRET_KEY_PASSWORD:-$SECRET_STORE_PASSWORD}" >> "$GITHUB_ENV"
+          else
+            GENERATED_PASS=$(openssl rand -hex 12)
+            keytool -genkeypair -v \
+              -keystore android/app/release.jks \
+              -alias mergefactory \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "$GENERATED_PASS" \
+              -keypass "$GENERATED_PASS" \
+              -dname "CN=Merge Factory 2D, O=MergeFactory, C=US"
+            cp android/app/release.jks aab-output/upload-keystore.jks
+            base64 -w 0 android/app/release.jks > aab-output/RELEASE_KEYSTORE_BASE64.txt
+            cat > aab-output/KEYSTORE_CREDENTIALS.txt <<EOF
+Save this upload keystore & credentials privately! You need the SAME keystore to publish future app updates on Google Play Console.
+
+Add these 4 GitHub Repository Secrets (Settings -> Secrets and variables -> Actions) for future updates:
+RELEASE_KEYSTORE_BASE64 = (contents of RELEASE_KEYSTORE_BASE64.txt)
+RELEASE_STORE_PASSWORD  = $GENERATED_PASS
+RELEASE_KEY_ALIAS       = mergefactory
+RELEASE_KEY_PASSWORD    = $GENERATED_PASS
+EOF
+            echo "RELEASE_STORE_FILE=release.jks" >> "$GITHUB_ENV"
+            echo "RELEASE_STORE_PASSWORD=$GENERATED_PASS" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_ALIAS=mergefactory" >> "$GITHUB_ENV"
+            echo "RELEASE_KEY_PASSWORD=$GENERATED_PASS" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build Android App Bundle (.aab)
+        run: |
+          if [ -n "$ANDROID_HOME" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+
+      - name: Prepare .aab artifact
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab aab-output/MergeFactory2D-release.aab
+
+      - name: Upload Play Store AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: MergeFactory2D-PlayStore-AAB
+          path: aab-output/
+          retention-days: 14
