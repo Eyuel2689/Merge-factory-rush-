@@ -15,10 +15,12 @@ import { SettingsView } from './components/SettingsView';
 import { OfflineModal } from './components/OfflineModal';
 import { AdModal, AdRewardType } from './components/AdModal';
 import { FloatingText } from './components/FloatingText';
-import { OfflineIndicator } from './components/PWAInstallButton';
+import { OnlineRequiredOverlay } from './components/PWAInstallButton';
+import { useOnlineStatus } from './hooks/usePWAInstall';
 import { initAdMob } from './services/admob';
 
 export default function App() {
+  const { isOnline, isChecking, recheckConnection } = useOnlineStatus();
   const [gameState, setGameState] = useState<GameState>(() => createInitialState());
   const [activeTab, setActiveTab] = useState<TabType>('factory');
   const [marketSubTab, setMarketSubTab] = useState<MarketSubTab>('marketplace');
@@ -73,8 +75,9 @@ export default function App() {
     };
   }, []);
 
-  // Passive Machine Earnings Tick (every 1 sec)
+  // Passive Machine Earnings Tick (every 1 sec, paused when offline)
   useEffect(() => {
+    if (!isOnline) return;
     const timer = setInterval(() => {
       setGameState(prev => {
         let incomeThisSecond = 0;
@@ -113,13 +116,14 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isOnline]);
 
   // Energy Regeneration Tick driven by chosen Play Mode (Relaxed 5s / Express 6s / Standard 8s)
   const playMode = gameState.settings?.playMode || 'standard';
   const energyIntervalMs = playMode === 'relaxed' ? 5000 : playMode === 'express' ? 6000 : 8000;
 
   useEffect(() => {
+    if (!isOnline) return;
     const timer = setInterval(() => {
       setGameState(prev => {
         if (prev.energy >= prev.maxEnergy) return prev;
@@ -131,7 +135,7 @@ export default function App() {
     }, energyIntervalMs);
 
     return () => clearInterval(timer);
-  }, [energyIntervalMs]);
+  }, [energyIntervalMs, isOnline]);
 
   // Periodic Calendar Midnight Daily Reset Check (every 10 sec)
   useEffect(() => {
@@ -310,7 +314,11 @@ export default function App() {
 
       {/* Floating Animated Reward Text */}
       <FloatingText items={floatingTexts} onRemoveItem={removeFloatingText} />
-      <OfflineIndicator />
+      <OnlineRequiredOverlay
+        isOnline={isOnline}
+        isChecking={isChecking}
+        onRetry={() => void recheckConnection()}
+      />
     </div>
   );
 }

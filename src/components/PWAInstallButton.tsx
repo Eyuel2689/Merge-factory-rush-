@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Download, Smartphone, X } from 'lucide-react';
-import { usePWAInstall, useOnlineStatus } from '../hooks/usePWAInstall';
+import { Download, Smartphone, X, WifiOff, RefreshCw, Loader2 } from 'lucide-react';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export const PWAInstallButton: React.FC = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
@@ -84,13 +84,52 @@ export const PWAInstallButton: React.FC = () => {
   );
 };
 
-export const OfflineIndicator: React.FC = () => {
-  const isOnline = useOnlineStatus();
+interface OnlineRequiredOverlayProps {
+  isOnline: boolean;
+  isChecking: boolean;
+  onRetry: () => void;
+}
+
+export const OnlineRequiredOverlay: React.FC<OnlineRequiredOverlayProps> = ({
+  isOnline,
+  isChecking,
+  onRetry
+}) => {
   if (isOnline) return null;
 
   return (
-    <div className="fixed bottom-16 left-3 z-40 flex items-center gap-2 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg">
-      <span>Offline Mode · Saved locally</span>
+    <div className="fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-5 select-none">
+      <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-4 animate-scaleIn text-slate-900">
+        <div className="w-16 h-16 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-600">
+          <WifiOff className="w-8 h-8" />
+        </div>
+
+        <div>
+          <h2 className="text-lg font-extrabold text-slate-900">Internet Connection Required</h2>
+          <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+            Merge Factory 2D requires an active internet connection to play, sync factory rewards, and load sponsored boosts.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={isChecking}
+          className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 disabled:opacity-70 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-95 transition cursor-pointer"
+        >
+          {isChecking ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Checking Connection...</span>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4" />
+              <span>Retry Connection</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

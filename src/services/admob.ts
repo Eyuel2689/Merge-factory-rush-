@@ -23,8 +23,10 @@ export interface NativeAdResult {
 const IS_TEST_MODE = import.meta.env.VITE_ADMOB_TEST_MODE === 'true';
 
 let initPromise: Promise<void> | null = null;
-let rewardedReady = false;
-let interstitialReady = false;
+let rewardedLoadPromise: Promise<string | null> | null = null;
+let interstitialLoadPromise: Promise<string | null> | null = null;
+let preparedRewardedUnitId: string | null = null;
+let preparedInterstitialUnitId: string | null = null;
 
 export function isNativeAdMob(): boolean {
   try {
@@ -44,9 +46,14 @@ export async function initAdMob(): Promise<void> {
         initializeForTesting: IS_TEST_MODE
       });
 
+      // Run UMP consent with a short timeout so slow network responses do not delay ad preloading
       try {
-        const consentInfo = await AdMob.requestConsentInfo();
+        const consentInfo = await Promise.race([
+          AdMob.requestConsentInfo(),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 3000))
+        ]);
         if (
+          consentInfo &&
           consentInfo.isConsentFormAvailable &&
           consentInfo.status === AdmobConsentStatus.REQUIRED
         ) {
@@ -67,40 +74,63 @@ export async function initAdMob(): Promise<void> {
   return initPromise;
 }
 
-export async function preloadRewardedAd(): Promise<boolean> {
-  if (!isNativeAdMob()) return false;
-  try {
-    await initAdMob();
-    await AdMob.prepareRewardVideoAd({
-      adId: ADMOB_CONFIG.rewardedAdUnitId,
-      isTesting: IS_TEST_MODE,
-      immersiveMode: true
-    });
-    rewardedReady = true;
-    return true;
-  } catch (err) {
-    rewardedReady = false;
-    console.warn('Rewarded ad preload failed:', err);
-    return false;
-  }
+let lastRewardedLoadError: string | null = null;
+
+export async function preloadRewardedAd(): Promise<string | null> {
+  if (!isNativeAdMob()) return null;
+  if (preparedRewardedUnitId) return preparedRewardedUnitId;
+  if (rewardedLoadPromise) return rewardedLoadPromise;
+
+  rewardedLoadPromise = (async () => {
+    try {
+      await initAdMob();
+      const info = await AdMob.prepareRewardVideoAd({
+        adId: ADMOB_CONFIG.rewardedAdUnitId,
+        isTesting: IS_TEST_MODE,
+        immersiveMode: true
+      });
+      preparedRewardedUnitId = info?.adUnitId || ADMOB_CONFIG.rewardedAdUnitId;
+      lastRewardedLoadError = null;
+      return preparedRewardedUnitId;
+    } catch (err: unknown) {
+      preparedRewardedUnitId = null;
+      const errObj = err as { message?: string } | undefined;
+      lastRewardedLoadError = errObj?.message || 'Unable to load ad from AdMob.';
+      console.warn('Rewarded ad preload failed:', err);
+      return null;
+    } finally {
+      rewardedLoadPromise = null;
+    }
+  })();
+
+  return rewardedLoadPromise;
 }
 
-export async function preloadInterstitialAd(): Promise<boolean> {
-  if (!isNativeAdMob()) return false;
-  try {
-    await initAdMob();
-    await AdMob.prepareInterstitial({
-      adId: ADMOB_CONFIG.interstitialAdUnitId,
-      isTesting: IS_TEST_MODE,
-      immersiveMode: true
-    });
-    interstitialReady = true;
-    return true;
-  } catch (err) {
-    interstitialReady = false;
-    console.warn('Interstitial ad preload failed:', err);
-    return false;
-  }
+export async function preloadInterstitialAd(): Promise<string | null> {
+  if (!isNativeAdMob()) return null;
+  if (preparedInterstitialUnitId) return preparedInterstitialUnitId;
+  if (interstitialLoadPromise) return interstitialLoadPromise;
+
+  interstitialLoadPromise = (async () => {
+    try {
+      await initAdMob();
+      const info = await AdMob.prepareInterstitial({
+        adId: ADMOB_CONFIG.interstitialAdUnitId,
+        isTesting: IS_TEST_MODE,
+        immersiveMode: true
+      });
+      preparedInterstitialUnitId = info?.adUnitId || ADMOB_CONFIG.interstitialAdUnitId;
+      return preparedInterstitialUnitId;
+    } catch (err) {
+      preparedInterstitialUnitId = null;
+      console.warn('Interstitial ad preload failed:', err);
+      return null;
+    } finally {
+      interstitialLoadPromise = null;
+    }
+  })();
+
+  return interstitialLoadPromise;
 }
 
 export async function showNativeRewardedAd(): Promise<NativeAdResult> {
@@ -110,17 +140,20 @@ export async function showNativeRewardedAd(): Promise<NativeAdResult> {
 
   await initAdMob();
 
-  if (!rewardedReady) {
-    const loaded = await preloadRewardedAd();
-    if (!loaded) {
+  let unitIdToShow = preparedRewardedUnitId;
+  if (!unitIdToShow) {
+    unitIdToShow = await preloadRewardedAd();
+    if (!unitIdToShow) {
       return {
         completed: false,
-        error: 'Ad is still loading or unavailable right now. Please try again in a moment.'
+        error:
+          lastRewardedLoadError ||
+          'Ad could not be loaded yet. Check your internet connection and tap Try Again.'
       };
     }
   }
 
-  rewardedReady = false;
+  preparedRewardedUnitId = null;
 
   let dismissedHandle: PluginListenerHandle | null = null;
   let failedHandle: PluginListenerHandle | null = null;
@@ -139,10 +172,9 @@ export async function showNativeRewardedAd(): Promise<NativeAdResult> {
     });
 
     await AdMob.showRewardVideoAd({
-      adId: ADMOB_CONFIG.rewardedAdUnitId
+      adId: unitIdToShow
     });
 
-    // Wait briefly for the native fullscreen overlay dismissal animation so rewards animate visibly
     await Promise.race([
       dismissedPromise,
       new Promise<void>(resolve => setTimeout(resolve, 600))
@@ -183,15 +215,15 @@ export async function showNativeInterstitialAd(): Promise<NativeAdResult> {
 
   await initAdMob();
 
-  if (!interstitialReady) {
-    const loaded = await preloadInterstitialAd();
-    if (!loaded) {
-      // Never block order flow if an interstitial fails to fill or user is offline
+  let unitIdToShow = preparedInterstitialUnitId;
+  if (!unitIdToShow) {
+    unitIdToShow = await preloadInterstitialAd();
+    if (!unitIdToShow) {
       return { completed: true };
     }
   }
 
-  interstitialReady = false;
+  preparedInterstitialUnitId = null;
 
   let dismissedHandle: PluginListenerHandle | null = null;
   let failedHandle: PluginListenerHandle | null = null;
@@ -209,7 +241,7 @@ export async function showNativeInterstitialAd(): Promise<NativeAdResult> {
 
   try {
     await AdMob.showInterstitial({
-      adId: ADMOB_CONFIG.interstitialAdUnitId
+      adId: unitIdToShow
     });
     await waitForClose;
     void preloadInterstitialAd();

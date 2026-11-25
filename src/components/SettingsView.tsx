@@ -357,7 +357,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ state, onUpdateState
           </div>
           <div className="min-w-0">
             <div className="text-xs font-extrabold text-slate-900">Privacy & Ad Disclosure</div>
-            <div className="text-[11px] text-slate-500 truncate">Offline-first local saves · Ad-supported</div>
+            <div className="text-[11px] text-slate-500 truncate">Online required · Local saves · Ad-supported</div>
           </div>
         </div>
         <button
