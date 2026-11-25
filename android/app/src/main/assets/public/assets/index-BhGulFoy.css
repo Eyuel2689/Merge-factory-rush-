@@ -484,8 +484,11 @@
 
   body {
     color: #0f172a;
-    overscroll-behavior-y: contain;
+    overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     touch-action: manipulation;
     background-color: #f2f6ff;
     background-image: radial-gradient(at 12% 8%, #38bdf83d 0, #0000 50%), radial-gradient(at 88% 12%, #fbbf2438 0, #0000 48%), radial-gradient(at 84% 85%, #34d39933 0, #0000 48%), radial-gradient(at 14% 88%, #a78bfa29 0, #0000 50%);
@@ -508,6 +511,10 @@
 @layer utilities {
   .pointer-events-none {
     pointer-events: none;
+  }
+
+  .visible {
+    visibility: visible;
   }
 
   .absolute {
@@ -586,20 +593,12 @@
     bottom: var(--spacing);
   }
 
-  .bottom-16 {
-    bottom: calc(var(--spacing) * 16);
-  }
-
   .left-1 {
     left: var(--spacing);
   }
 
   .left-1\.5 {
     left: calc(var(--spacing) * 1.5);
-  }
-
-  .left-3 {
-    left: calc(var(--spacing) * 3);
   }
 
   .z-10 {
@@ -614,12 +613,12 @@
     z-index: 30;
   }
 
-  .z-40 {
-    z-index: 40;
-  }
-
   .z-50 {
     z-index: 50;
+  }
+
+  .z-\[100\] {
+    z-index: 100;
   }
 
   .mx-auto {
@@ -1456,10 +1455,6 @@
 
   .bg-amber-400 {
     background-color: var(--color-amber-400);
-  }
-
-  .bg-amber-500 {
-    background-color: var(--color-amber-500);
   }
 
   .bg-cyan-50 {
@@ -3160,6 +3155,10 @@
 
   .active\:cursor-grabbing:active {
     cursor: grabbing;
+  }
+
+  .disabled\:opacity-70:disabled {
+    opacity: .7;
   }
 
   @media (min-width: 40rem) {

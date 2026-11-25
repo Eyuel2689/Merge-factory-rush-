@@ -12535,6 +12535,514 @@ function requireClient() {
   return client.exports;
 }
 var clientExports = requireClient();
+/*! Capacitor: https://capacitorjs.com/ - MIT License */
+var ExceptionCode;
+(function(ExceptionCode2) {
+  ExceptionCode2["Unimplemented"] = "UNIMPLEMENTED";
+  ExceptionCode2["Unavailable"] = "UNAVAILABLE";
+})(ExceptionCode || (ExceptionCode = {}));
+class CapacitorException extends Error {
+  constructor(message, code, data) {
+    super(message);
+    this.message = message;
+    this.code = code;
+    this.data = data;
+  }
+}
+const getPlatformId = (win) => {
+  var _a, _b;
+  if (win === null || win === void 0 ? void 0 : win.androidBridge) {
+    return "android";
+  } else if ((_b = (_a = win === null || win === void 0 ? void 0 : win.webkit) === null || _a === void 0 ? void 0 : _a.messageHandlers) === null || _b === void 0 ? void 0 : _b.bridge) {
+    return "ios";
+  } else {
+    return "web";
+  }
+};
+const createCapacitor = (win) => {
+  const capCustomPlatform = win.CapacitorCustomPlatform || null;
+  const cap = win.Capacitor || {};
+  const Plugins = cap.Plugins = cap.Plugins || {};
+  const getPlatform = () => {
+    return capCustomPlatform !== null ? capCustomPlatform.name : getPlatformId(win);
+  };
+  const isNativePlatform = () => getPlatform() !== "web";
+  const isPluginAvailable = (pluginName) => {
+    const plugin = registeredPlugins.get(pluginName);
+    if (plugin === null || plugin === void 0 ? void 0 : plugin.platforms.has(getPlatform())) {
+      return true;
+    }
+    if (getPluginHeader(pluginName)) {
+      return true;
+    }
+    return false;
+  };
+  const getPluginHeader = (pluginName) => {
+    var _a;
+    return (_a = cap.PluginHeaders) === null || _a === void 0 ? void 0 : _a.find((h) => h.name === pluginName);
+  };
+  const handleError = (err) => win.console.error(err);
+  const registeredPlugins = /* @__PURE__ */ new Map();
+  const registerPlugin2 = (pluginName, jsImplementations = {}) => {
+    const registeredPlugin = registeredPlugins.get(pluginName);
+    if (registeredPlugin) {
+      console.warn(`Capacitor plugin "${pluginName}" already registered. Cannot register plugins twice.`);
+      return registeredPlugin.proxy;
+    }
+    const platform = getPlatform();
+    const pluginHeader = getPluginHeader(pluginName);
+    let jsImplementation;
+    const loadPluginImplementation = async () => {
+      if (!jsImplementation && platform in jsImplementations) {
+        jsImplementation = typeof jsImplementations[platform] === "function" ? jsImplementation = await jsImplementations[platform]() : jsImplementation = jsImplementations[platform];
+      } else if (capCustomPlatform !== null && !jsImplementation && "web" in jsImplementations) {
+        jsImplementation = typeof jsImplementations["web"] === "function" ? jsImplementation = await jsImplementations["web"]() : jsImplementation = jsImplementations["web"];
+      }
+      return jsImplementation;
+    };
+    const createPluginMethod = (impl, prop) => {
+      var _a, _b;
+      if (pluginHeader) {
+        const methodHeader = pluginHeader === null || pluginHeader === void 0 ? void 0 : pluginHeader.methods.find((m) => prop === m.name);
+        if (methodHeader) {
+          if (methodHeader.rtype === "promise") {
+            return (options) => cap.nativePromise(pluginName, prop.toString(), options);
+          } else {
+            return (options, callback) => cap.nativeCallback(pluginName, prop.toString(), options, callback);
+          }
+        } else if (impl) {
+          return (_a = impl[prop]) === null || _a === void 0 ? void 0 : _a.bind(impl);
+        }
+      } else if (impl) {
+        return (_b = impl[prop]) === null || _b === void 0 ? void 0 : _b.bind(impl);
+      } else {
+        throw new CapacitorException(`"${pluginName}" plugin is not implemented on ${platform}`, ExceptionCode.Unimplemented);
+      }
+    };
+    const createPluginMethodWrapper = (prop) => {
+      let remove;
+      const wrapper = (...args) => {
+        const p = loadPluginImplementation().then((impl) => {
+          const fn = createPluginMethod(impl, prop);
+          if (fn) {
+            const p2 = fn(...args);
+            remove = p2 === null || p2 === void 0 ? void 0 : p2.remove;
+            return p2;
+          } else {
+            throw new CapacitorException(`"${pluginName}.${prop}()" is not implemented on ${platform}`, ExceptionCode.Unimplemented);
+          }
+        });
+        if (prop === "addListener") {
+          p.remove = async () => remove();
+        }
+        return p;
+      };
+      wrapper.toString = () => `${prop.toString()}() { [capacitor code] }`;
+      Object.defineProperty(wrapper, "name", {
+        value: prop,
+        writable: false,
+        configurable: false
+      });
+      return wrapper;
+    };
+    const addListener = createPluginMethodWrapper("addListener");
+    const removeListener = createPluginMethodWrapper("removeListener");
+    const addListenerNative = (eventName, callback) => {
+      const call = addListener({ eventName }, callback).then((callbackId) => callbackId);
+      const remove = async () => {
+        const callbackId = await call;
+        await removeListener({
+          eventName,
+          callbackId
+        });
+      };
+      const p = new Promise((resolve) => call.then(() => resolve({ remove })));
+      p.remove = async () => {
+        console.warn(`Using addListener() without 'await' is deprecated.`);
+        await remove();
+      };
+      return p;
+    };
+    const proxy = new Proxy({}, {
+      get(_, prop) {
+        switch (prop) {
+          // https://github.com/facebook/react/issues/20030
+          case "$$typeof":
+            return void 0;
+          case "toJSON":
+            return () => ({});
+          case "addListener":
+            return pluginHeader ? addListenerNative : addListener;
+          case "removeListener":
+            return removeListener;
+          default:
+            return createPluginMethodWrapper(prop);
+        }
+      }
+    });
+    Plugins[pluginName] = proxy;
+    registeredPlugins.set(pluginName, {
+      name: pluginName,
+      proxy,
+      platforms: /* @__PURE__ */ new Set([...Object.keys(jsImplementations), ...pluginHeader ? [platform] : []])
+    });
+    return proxy;
+  };
+  if (!cap.convertFileSrc) {
+    cap.convertFileSrc = (filePath) => filePath;
+  }
+  cap.getPlatform = getPlatform;
+  cap.handleError = handleError;
+  cap.isNativePlatform = isNativePlatform;
+  cap.isPluginAvailable = isPluginAvailable;
+  cap.registerPlugin = registerPlugin2;
+  cap.Exception = CapacitorException;
+  cap.DEBUG = !!cap.DEBUG;
+  cap.isLoggingEnabled = !!cap.isLoggingEnabled;
+  return cap;
+};
+const initCapacitorGlobal = (win) => win.Capacitor = createCapacitor(win);
+const Capacitor = /* @__PURE__ */ initCapacitorGlobal(typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {});
+const registerPlugin = Capacitor.registerPlugin;
+class WebPlugin {
+  constructor() {
+    this.listeners = {};
+    this.retainedEventArguments = {};
+    this.windowListeners = {};
+  }
+  addListener(eventName, listenerFunc) {
+    let firstListener = false;
+    const listeners = this.listeners[eventName];
+    if (!listeners) {
+      this.listeners[eventName] = [];
+      firstListener = true;
+    }
+    this.listeners[eventName].push(listenerFunc);
+    const windowListener = this.windowListeners[eventName];
+    if (windowListener && !windowListener.registered) {
+      this.addWindowListener(windowListener);
+    }
+    if (firstListener) {
+      this.sendRetainedArgumentsForEvent(eventName);
+    }
+    const remove = async () => this.removeListener(eventName, listenerFunc);
+    const p = Promise.resolve({ remove });
+    return p;
+  }
+  async removeAllListeners() {
+    this.listeners = {};
+    for (const listener in this.windowListeners) {
+      this.removeWindowListener(this.windowListeners[listener]);
+    }
+    this.windowListeners = {};
+  }
+  notifyListeners(eventName, data, retainUntilConsumed) {
+    const listeners = this.listeners[eventName];
+    if (!listeners) {
+      if (retainUntilConsumed) {
+        let args = this.retainedEventArguments[eventName];
+        if (!args) {
+          args = [];
+        }
+        args.push(data);
+        this.retainedEventArguments[eventName] = args;
+      }
+      return;
+    }
+    listeners.forEach((listener) => listener(data));
+  }
+  hasListeners(eventName) {
+    var _a;
+    return !!((_a = this.listeners[eventName]) === null || _a === void 0 ? void 0 : _a.length);
+  }
+  registerWindowListener(windowEventName, pluginEventName) {
+    this.windowListeners[pluginEventName] = {
+      registered: false,
+      windowEventName,
+      pluginEventName,
+      handler: (event) => {
+        this.notifyListeners(pluginEventName, event);
+      }
+    };
+  }
+  unimplemented(msg = "not implemented") {
+    return new Capacitor.Exception(msg, ExceptionCode.Unimplemented);
+  }
+  unavailable(msg = "not available") {
+    return new Capacitor.Exception(msg, ExceptionCode.Unavailable);
+  }
+  async removeListener(eventName, listenerFunc) {
+    const listeners = this.listeners[eventName];
+    if (!listeners) {
+      return;
+    }
+    const index = listeners.indexOf(listenerFunc);
+    if (index !== -1) {
+      this.listeners[eventName].splice(index, 1);
+    }
+    if (!this.listeners[eventName].length) {
+      this.removeWindowListener(this.windowListeners[eventName]);
+    }
+  }
+  addWindowListener(handle) {
+    window.addEventListener(handle.windowEventName, handle.handler);
+    handle.registered = true;
+  }
+  removeWindowListener(handle) {
+    if (!handle) {
+      return;
+    }
+    window.removeEventListener(handle.windowEventName, handle.handler);
+    handle.registered = false;
+  }
+  sendRetainedArgumentsForEvent(eventName) {
+    const args = this.retainedEventArguments[eventName];
+    if (!args) {
+      return;
+    }
+    delete this.retainedEventArguments[eventName];
+    args.forEach((arg) => {
+      this.notifyListeners(eventName, arg);
+    });
+  }
+}
+const encode = (str) => encodeURIComponent(str).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent).replace(/[()]/g, escape);
+const decode = (str) => str.replace(/(%[\dA-F]{2})+/gi, decodeURIComponent);
+class CapacitorCookiesPluginWeb extends WebPlugin {
+  async getCookies() {
+    const cookies = document.cookie;
+    const cookieMap = {};
+    cookies.split(";").forEach((cookie) => {
+      if (cookie.length <= 0)
+        return;
+      let [key, value] = cookie.replace(/=/, "CAP_COOKIE").split("CAP_COOKIE");
+      key = decode(key).trim();
+      value = decode(value).trim();
+      cookieMap[key] = value;
+    });
+    return cookieMap;
+  }
+  async setCookie(options) {
+    try {
+      const encodedKey = encode(options.key);
+      const encodedValue = encode(options.value);
+      const expires = options.expires ? `; expires=${options.expires.replace("expires=", "")}` : "";
+      const path = (options.path || "/").replace("path=", "");
+      const domain = options.url != null && options.url.length > 0 ? `domain=${options.url}` : "";
+      document.cookie = `${encodedKey}=${encodedValue || ""}${expires}; path=${path}; ${domain};`;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+  async deleteCookie(options) {
+    try {
+      document.cookie = `${options.key}=; Max-Age=0`;
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+  async clearCookies() {
+    try {
+      const cookies = document.cookie.split(";") || [];
+      for (const cookie of cookies) {
+        document.cookie = cookie.replace(/^ +/, "").replace(/=.*/, `=;expires=${(/* @__PURE__ */ new Date()).toUTCString()};path=/`);
+      }
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+  async clearAllCookies() {
+    try {
+      await this.clearCookies();
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+}
+registerPlugin("CapacitorCookies", {
+  web: () => new CapacitorCookiesPluginWeb()
+});
+const readBlobAsBase64 = async (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const base64String = reader.result;
+    resolve(base64String.indexOf(",") >= 0 ? base64String.split(",")[1] : base64String);
+  };
+  reader.onerror = (error) => reject(error);
+  reader.readAsDataURL(blob);
+});
+const normalizeHttpHeaders = (headers = {}) => {
+  const originalKeys = Object.keys(headers);
+  const loweredKeys = Object.keys(headers).map((k) => k.toLocaleLowerCase());
+  const normalized = loweredKeys.reduce((acc, key, index) => {
+    acc[key] = headers[originalKeys[index]];
+    return acc;
+  }, {});
+  return normalized;
+};
+const buildUrlParams = (params, shouldEncode = true) => {
+  if (!params)
+    return null;
+  const output = Object.entries(params).reduce((accumulator, entry) => {
+    const [key, value] = entry;
+    let encodedValue;
+    let item;
+    if (Array.isArray(value)) {
+      item = "";
+      value.forEach((str) => {
+        encodedValue = shouldEncode ? encodeURIComponent(str) : str;
+        item += `${key}=${encodedValue}&`;
+      });
+      item.slice(0, -1);
+    } else {
+      encodedValue = shouldEncode ? encodeURIComponent(value) : value;
+      item = `${key}=${encodedValue}`;
+    }
+    return `${accumulator}&${item}`;
+  }, "");
+  return output.substr(1);
+};
+const buildRequestInit = (options, extra = {}) => {
+  const output = Object.assign({ method: options.method || "GET", headers: options.headers }, extra);
+  const headers = normalizeHttpHeaders(options.headers);
+  const type = headers["content-type"] || "";
+  if (typeof options.data === "string") {
+    output.body = options.data;
+  } else if (type.includes("application/x-www-form-urlencoded")) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(options.data || {})) {
+      params.set(key, value);
+    }
+    output.body = params.toString();
+  } else if (type.includes("multipart/form-data") || options.data instanceof FormData) {
+    const form = new FormData();
+    if (options.data instanceof FormData) {
+      options.data.forEach((value, key) => {
+        form.append(key, value);
+      });
+    } else {
+      for (const key of Object.keys(options.data)) {
+        form.append(key, options.data[key]);
+      }
+    }
+    output.body = form;
+    const headers2 = new Headers(output.headers);
+    headers2.delete("content-type");
+    output.headers = headers2;
+  } else if (type.includes("application/json") || typeof options.data === "object") {
+    output.body = JSON.stringify(options.data);
+  }
+  return output;
+};
+class CapacitorHttpPluginWeb extends WebPlugin {
+  /**
+   * Perform an Http request given a set of options
+   * @param options Options to build the HTTP request
+   */
+  async request(options) {
+    const requestInit = buildRequestInit(options, options.webFetchExtra);
+    const urlParams = buildUrlParams(options.params, options.shouldEncodeUrlParams);
+    const url = urlParams ? `${options.url}?${urlParams}` : options.url;
+    const response = await fetch(url, requestInit);
+    const contentType = response.headers.get("content-type") || "";
+    let { responseType = "text" } = response.ok ? options : {};
+    if (contentType.includes("application/json")) {
+      responseType = "json";
+    }
+    let data;
+    let blob;
+    switch (responseType) {
+      case "arraybuffer":
+      case "blob":
+        blob = await response.blob();
+        data = await readBlobAsBase64(blob);
+        break;
+      case "json":
+        data = await response.json();
+        break;
+      case "document":
+      case "text":
+      default:
+        data = await response.text();
+    }
+    const headers = {};
+    response.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    return {
+      data,
+      headers,
+      status: response.status,
+      url: response.url
+    };
+  }
+  /**
+   * Perform an Http GET request given a set of options
+   * @param options Options to build the HTTP request
+   */
+  async get(options) {
+    return this.request(Object.assign(Object.assign({}, options), { method: "GET" }));
+  }
+  /**
+   * Perform an Http POST request given a set of options
+   * @param options Options to build the HTTP request
+   */
+  async post(options) {
+    return this.request(Object.assign(Object.assign({}, options), { method: "POST" }));
+  }
+  /**
+   * Perform an Http PUT request given a set of options
+   * @param options Options to build the HTTP request
+   */
+  async put(options) {
+    return this.request(Object.assign(Object.assign({}, options), { method: "PUT" }));
+  }
+  /**
+   * Perform an Http PATCH request given a set of options
+   * @param options Options to build the HTTP request
+   */
+  async patch(options) {
+    return this.request(Object.assign(Object.assign({}, options), { method: "PATCH" }));
+  }
+  /**
+   * Perform an Http DELETE request given a set of options
+   * @param options Options to build the HTTP request
+   */
+  async delete(options) {
+    return this.request(Object.assign(Object.assign({}, options), { method: "DELETE" }));
+  }
+}
+registerPlugin("CapacitorHttp", {
+  web: () => new CapacitorHttpPluginWeb()
+});
+var SystemBarsStyle;
+(function(SystemBarsStyle2) {
+  SystemBarsStyle2["Dark"] = "DARK";
+  SystemBarsStyle2["Light"] = "LIGHT";
+  SystemBarsStyle2["Default"] = "DEFAULT";
+})(SystemBarsStyle || (SystemBarsStyle = {}));
+var SystemBarType;
+(function(SystemBarType2) {
+  SystemBarType2["StatusBar"] = "StatusBar";
+  SystemBarType2["NavigationBar"] = "NavigationBar";
+})(SystemBarType || (SystemBarType = {}));
+class SystemBarsPluginWeb extends WebPlugin {
+  async setStyle() {
+    this.unavailable("not available for web");
+  }
+  async setAnimation() {
+    this.unavailable("not available for web");
+  }
+  async show() {
+    this.unavailable("not available for web");
+  }
+  async hide() {
+    this.unavailable("not available for web");
+  }
+}
+registerPlugin("SystemBars", {
+  web: () => new SystemBarsPluginWeb()
+});
 const scriptRel = "modulepreload";
 const assetsURL = function(dep) {
   return "/" + dep;
@@ -14046,12 +14554,23 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$U = [
+const __iconNode$V = [
   ["rect", { width: "20", height: "5", x: "2", y: "3", rx: "1", key: "1wp1u1" }],
   ["path", { d: "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8", key: "1s80jp" }],
   ["path", { d: "M10 12h4", key: "a56b0p" }]
 ];
-const Archive = createLucideIcon("archive", __iconNode$U);
+const Archive = createLucideIcon("archive", __iconNode$V);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$U = [
+  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
+  ["path", { d: "M19 12H5", key: "x3x0zl" }]
+];
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$U);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14059,10 +14578,10 @@ const Archive = createLucideIcon("archive", __iconNode$U);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$T = [
-  ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
-  ["path", { d: "M19 12H5", key: "x3x0zl" }]
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$T);
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$T);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14070,10 +14589,12 @@ const ArrowLeft = createLucideIcon("arrow-left", __iconNode$T);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$S = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
+  ["path", { d: "m21 16-4 4-4-4", key: "f6ql7i" }],
+  ["path", { d: "M17 20V4", key: "1ejh1v" }],
+  ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
+  ["path", { d: "M7 4v16", key: "1glfcx" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$S);
+const ArrowUpDown = createLucideIcon("arrow-up-down", __iconNode$S);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14081,12 +14602,10 @@ const ArrowRight = createLucideIcon("arrow-right", __iconNode$S);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$R = [
-  ["path", { d: "m21 16-4 4-4-4", key: "f6ql7i" }],
-  ["path", { d: "M17 20V4", key: "1ejh1v" }],
-  ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
-  ["path", { d: "M7 4v16", key: "1glfcx" }]
+  ["path", { d: "M7 7h10v10", key: "1tivn9" }],
+  ["path", { d: "M7 17 17 7", key: "1vkiza" }]
 ];
-const ArrowUpDown = createLucideIcon("arrow-up-down", __iconNode$R);
+const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$R);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14094,17 +14613,6 @@ const ArrowUpDown = createLucideIcon("arrow-up-down", __iconNode$R);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$Q = [
-  ["path", { d: "M7 7h10v10", key: "1tivn9" }],
-  ["path", { d: "M7 17 17 7", key: "1vkiza" }]
-];
-const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$Q);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$P = [
   ["path", { d: "M12 7v14", key: "1akyts" }],
   [
     "path",
@@ -14114,44 +14622,56 @@ const __iconNode$P = [
     }
   ]
 ];
-const BookOpen = createLucideIcon("book-open", __iconNode$P);
+const BookOpen = createLucideIcon("book-open", __iconNode$Q);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$O = [
+const __iconNode$P = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "M18 17V9", key: "2bz60n" }],
   ["path", { d: "M13 17V5", key: "1frdt8" }],
   ["path", { d: "M8 17v-3", key: "17ska0" }]
 ];
-const ChartColumn = createLucideIcon("chart-column", __iconNode$O);
+const ChartColumn = createLucideIcon("chart-column", __iconNode$P);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$N = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$N);
+const __iconNode$O = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$O);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$M = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$M);
+const __iconNode$N = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$N);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$L = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$L);
+const __iconNode$M = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$M);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$L = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$L);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14160,10 +14680,10 @@ const ChevronUp = createLucideIcon("chevron-up", __iconNode$L);
  */
 const __iconNode$K = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+  ["path", { d: "m16 12-4-4-4 4", key: "177agl" }],
+  ["path", { d: "M12 16V8", key: "1sbj14" }]
 ];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$K);
+const CircleArrowUp = createLucideIcon("circle-arrow-up", __iconNode$K);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14171,11 +14691,10 @@ const CircleAlert = createLucideIcon("circle-alert", __iconNode$K);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$J = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m16 12-4-4-4 4", key: "177agl" }],
-  ["path", { d: "M12 16V8", key: "1sbj14" }]
+  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
 ];
-const CircleArrowUp = createLucideIcon("circle-arrow-up", __iconNode$J);
+const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$J);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14183,10 +14702,10 @@ const CircleArrowUp = createLucideIcon("circle-arrow-up", __iconNode$J);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$I = [
-  ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-  ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$I);
+const CircleCheck = createLucideIcon("circle-check", __iconNode$I);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14194,17 +14713,6 @@ const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$I);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$H = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$H);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$G = [
   [
     "path",
     {
@@ -14214,7 +14722,19 @@ const __iconNode$G = [
   ],
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
 ];
-const CirclePlay = createLucideIcon("circle-play", __iconNode$G);
+const CirclePlay = createLucideIcon("circle-play", __iconNode$H);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$G = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "M8 12h8", key: "1wcyev" }],
+  ["path", { d: "M12 8v8", key: "napkw2" }]
+];
+const CirclePlus = createLucideIcon("circle-plus", __iconNode$G);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14222,18 +14742,6 @@ const CirclePlay = createLucideIcon("circle-play", __iconNode$G);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$F = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M8 12h8", key: "1wcyev" }],
-  ["path", { d: "M12 8v8", key: "napkw2" }]
-];
-const CirclePlus = createLucideIcon("circle-plus", __iconNode$F);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$E = [
   ["rect", { width: "8", height: "4", x: "8", y: "2", rx: "1", ry: "1", key: "tgr4d6" }],
   [
     "path",
@@ -14244,7 +14752,18 @@ const __iconNode$E = [
   ],
   ["path", { d: "m9 14 2 2 4-4", key: "df797q" }]
 ];
-const ClipboardCheck = createLucideIcon("clipboard-check", __iconNode$E);
+const ClipboardCheck = createLucideIcon("clipboard-check", __iconNode$F);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$E = [
+  ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }],
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
+];
+const Clock = createLucideIcon("clock", __iconNode$E);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14252,10 +14771,12 @@ const ClipboardCheck = createLucideIcon("clipboard-check", __iconNode$E);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$D = [
-  ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }],
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
+  ["circle", { cx: "8", cy: "8", r: "6", key: "3yglwk" }],
+  ["path", { d: "M18.09 10.37A6 6 0 1 1 10.34 18", key: "t5s6rm" }],
+  ["path", { d: "M7 6h1v4", key: "1obek4" }],
+  ["path", { d: "m16.71 13.88.7.71-2.82 2.82", key: "1rbuyh" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$D);
+const Coins = createLucideIcon("coins", __iconNode$D);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14263,19 +14784,6 @@ const Clock = createLucideIcon("clock", __iconNode$D);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$C = [
-  ["circle", { cx: "8", cy: "8", r: "6", key: "3yglwk" }],
-  ["path", { d: "M18.09 10.37A6 6 0 1 1 10.34 18", key: "t5s6rm" }],
-  ["path", { d: "M7 6h1v4", key: "1obek4" }],
-  ["path", { d: "m16.71 13.88.7.71-2.82 2.82", key: "1rbuyh" }]
-];
-const Coins = createLucideIcon("coins", __iconNode$C);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$B = [
   ["path", { d: "M10 2v2", key: "7u0qdc" }],
   ["path", { d: "M14 2v2", key: "6buw04" }],
   [
@@ -14287,14 +14795,14 @@ const __iconNode$B = [
   ],
   ["path", { d: "M6 2v2", key: "colzsn" }]
 ];
-const Coffee = createLucideIcon("coffee", __iconNode$B);
+const Coffee = createLucideIcon("coffee", __iconNode$C);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$A = [
+const __iconNode$B = [
   ["path", { d: "M12 20v2", key: "1lh1kg" }],
   ["path", { d: "M12 2v2", key: "tus03m" }],
   ["path", { d: "M17 20v2", key: "1rnc9c" }],
@@ -14310,7 +14818,19 @@ const __iconNode$A = [
   ["rect", { x: "4", y: "4", width: "16", height: "16", rx: "2", key: "1vbyd7" }],
   ["rect", { x: "8", y: "8", width: "8", height: "8", rx: "1", key: "z9xiuo" }]
 ];
-const Cpu = createLucideIcon("cpu", __iconNode$A);
+const Cpu = createLucideIcon("cpu", __iconNode$B);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$A = [
+  ["path", { d: "M12 15V3", key: "m9g1x1" }],
+  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
+  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
+];
+const Download = createLucideIcon("download", __iconNode$A);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14318,18 +14838,6 @@ const Cpu = createLucideIcon("cpu", __iconNode$A);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$z = [
-  ["path", { d: "M12 15V3", key: "m9g1x1" }],
-  ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
-  ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
-];
-const Download = createLucideIcon("download", __iconNode$z);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$y = [
   ["path", { d: "M12 16h.01", key: "1drbdi" }],
   ["path", { d: "M16 16h.01", key: "1f9h7w" }],
   [
@@ -14341,14 +14849,14 @@ const __iconNode$y = [
   ],
   ["path", { d: "M8 16h.01", key: "18s6g9" }]
 ];
-const Factory = createLucideIcon("factory", __iconNode$y);
+const Factory = createLucideIcon("factory", __iconNode$z);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$x = [
+const __iconNode$y = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M7 3v18", key: "bbkbws" }],
   ["path", { d: "M3 7.5h4", key: "zfgn84" }],
@@ -14358,14 +14866,14 @@ const __iconNode$x = [
   ["path", { d: "M17 7.5h4", key: "myr1c1" }],
   ["path", { d: "M17 16.5h4", key: "go4c1d" }]
 ];
-const Film = createLucideIcon("film", __iconNode$x);
+const Film = createLucideIcon("film", __iconNode$y);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$w = [
+const __iconNode$x = [
   [
     "path",
     {
@@ -14374,7 +14882,18 @@ const __iconNode$w = [
     }
   ]
 ];
-const Flame = createLucideIcon("flame", __iconNode$w);
+const Flame = createLucideIcon("flame", __iconNode$x);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$w = [
+  ["path", { d: "m12 14 4-4", key: "9kzdfg" }],
+  ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
+];
+const Gauge = createLucideIcon("gauge", __iconNode$w);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14382,17 +14901,6 @@ const Flame = createLucideIcon("flame", __iconNode$w);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$v = [
-  ["path", { d: "m12 14 4-4", key: "9kzdfg" }],
-  ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
-];
-const Gauge = createLucideIcon("gauge", __iconNode$v);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$u = [
   ["path", { d: "M10.5 3 8 9l4 13 4-13-2.5-6", key: "b3dvk1" }],
   [
     "path",
@@ -14403,14 +14911,14 @@ const __iconNode$u = [
   ],
   ["path", { d: "M2 9h20", key: "16fsjt" }]
 ];
-const Gem = createLucideIcon("gem", __iconNode$u);
+const Gem = createLucideIcon("gem", __iconNode$v);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$t = [
+const __iconNode$u = [
   ["rect", { x: "3", y: "8", width: "18", height: "4", rx: "1", key: "bkv52" }],
   ["path", { d: "M12 8v13", key: "1c76mn" }],
   ["path", { d: "M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7", key: "6wjy6b" }],
@@ -14422,7 +14930,19 @@ const __iconNode$t = [
     }
   ]
 ];
-const Gift = createLucideIcon("gift", __iconNode$t);
+const Gift = createLucideIcon("gift", __iconNode$u);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$t = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "M12 16v-4", key: "1dtifu" }],
+  ["path", { d: "M12 8h.01", key: "e9boi3" }]
+];
+const Info = createLucideIcon("info", __iconNode$t);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14430,18 +14950,6 @@ const Gift = createLucideIcon("gift", __iconNode$t);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$s = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "M12 16v-4", key: "1dtifu" }],
-  ["path", { d: "M12 8h.01", key: "e9boi3" }]
-];
-const Info = createLucideIcon("info", __iconNode$s);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$r = [
   [
     "path",
     {
@@ -14464,15 +14972,26 @@ const __iconNode$r = [
     }
   ]
 ];
-const Layers = createLucideIcon("layers", __iconNode$r);
+const Layers = createLucideIcon("layers", __iconNode$s);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$q = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$q);
+const __iconNode$r = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$r);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$q = [
+  ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
+  ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
+];
+const Lock = createLucideIcon("lock", __iconNode$q);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14480,10 +14999,11 @@ const LoaderCircle = createLucideIcon("loader-circle", __iconNode$q);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$p = [
-  ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
-  ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
+  ["path", { d: "M9 18V5l12-2v13", key: "1jmyc2" }],
+  ["circle", { cx: "6", cy: "18", r: "3", key: "fqmcym" }],
+  ["circle", { cx: "18", cy: "16", r: "3", key: "1hluhg" }]
 ];
-const Lock = createLucideIcon("lock", __iconNode$p);
+const Music = createLucideIcon("music", __iconNode$p);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14491,18 +15011,6 @@ const Lock = createLucideIcon("lock", __iconNode$p);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$o = [
-  ["path", { d: "M9 18V5l12-2v13", key: "1jmyc2" }],
-  ["circle", { cx: "6", cy: "18", r: "3", key: "fqmcym" }],
-  ["circle", { cx: "18", cy: "16", r: "3", key: "1hluhg" }]
-];
-const Music = createLucideIcon("music", __iconNode$o);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$n = [
   [
     "path",
     {
@@ -14514,14 +15022,14 @@ const __iconNode$n = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$n);
+const Package = createLucideIcon("package", __iconNode$o);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$m = [
+const __iconNode$n = [
   [
     "path",
     {
@@ -14534,7 +15042,18 @@ const __iconNode$m = [
   ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor", key: "qy21gx" }],
   ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor", key: "fotxhn" }]
 ];
-const Palette = createLucideIcon("palette", __iconNode$m);
+const Palette = createLucideIcon("palette", __iconNode$n);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$m = [
+  ["path", { d: "M5 12h14", key: "1ays0h" }],
+  ["path", { d: "M12 5v14", key: "s699le" }]
+];
+const Plus = createLucideIcon("plus", __iconNode$m);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14542,10 +15061,12 @@ const Palette = createLucideIcon("palette", __iconNode$m);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$l = [
-  ["path", { d: "M5 12h14", key: "1ays0h" }],
-  ["path", { d: "M12 5v14", key: "s699le" }]
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
 ];
-const Plus = createLucideIcon("plus", __iconNode$l);
+const RefreshCw = createLucideIcon("refresh-cw", __iconNode$l);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14553,19 +15074,6 @@ const Plus = createLucideIcon("plus", __iconNode$l);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$k = [
-  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
-  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
-  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
-  ["path", { d: "M8 16H3v5", key: "1cv678" }]
-];
-const RefreshCw = createLucideIcon("refresh-cw", __iconNode$k);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$j = [
   [
     "path",
     {
@@ -14583,7 +15091,18 @@ const __iconNode$j = [
   ["path", { d: "M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0", key: "1f8sc4" }],
   ["path", { d: "M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5", key: "qeys4" }]
 ];
-const Rocket = createLucideIcon("rocket", __iconNode$j);
+const Rocket = createLucideIcon("rocket", __iconNode$k);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$j = [
+  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
+  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
+];
+const RotateCcw = createLucideIcon("rotate-ccw", __iconNode$j);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14591,10 +15110,16 @@ const Rocket = createLucideIcon("rocket", __iconNode$j);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$i = [
-  ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
-  ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
+  [
+    "path",
+    {
+      d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915",
+      key: "1i5ecw"
+    }
+  ],
+  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const RotateCcw = createLucideIcon("rotate-ccw", __iconNode$i);
+const Settings = createLucideIcon("settings", __iconNode$i);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14605,13 +15130,13 @@ const __iconNode$h = [
   [
     "path",
     {
-      d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915",
-      key: "1i5ecw"
+      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+      key: "oel41y"
     }
   ],
-  ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
+  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const Settings = createLucideIcon("settings", __iconNode$h);
+const ShieldCheck = createLucideIcon("shield-check", __iconNode$h);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14619,23 +15144,6 @@ const Settings = createLucideIcon("settings", __iconNode$h);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$g = [
-  [
-    "path",
-    {
-      d: "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
-      key: "oel41y"
-    }
-  ],
-  ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-];
-const ShieldCheck = createLucideIcon("shield-check", __iconNode$g);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$f = [
   ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
   ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
   [
@@ -14646,14 +15154,14 @@ const __iconNode$f = [
     }
   ]
 ];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$f);
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$g);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$e = [
+const __iconNode$f = [
   ["path", { d: "M10 8h4", key: "1sr2af" }],
   ["path", { d: "M12 21v-9", key: "17s77i" }],
   ["path", { d: "M12 8V3", key: "13r4qs" }],
@@ -14664,7 +15172,18 @@ const __iconNode$e = [
   ["path", { d: "M5 10V3", key: "cb8scm" }],
   ["path", { d: "M5 21v-7", key: "1w1uti" }]
 ];
-const SlidersVertical = createLucideIcon("sliders-vertical", __iconNode$e);
+const SlidersVertical = createLucideIcon("sliders-vertical", __iconNode$f);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$e = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+const Smartphone = createLucideIcon("smartphone", __iconNode$e);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14672,17 +15191,6 @@ const SlidersVertical = createLucideIcon("sliders-vertical", __iconNode$e);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$d = [
-  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-  ["path", { d: "M12 18h.01", key: "mhygvu" }]
-];
-const Smartphone = createLucideIcon("smartphone", __iconNode$d);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$c = [
   [
     "path",
     {
@@ -14694,14 +15202,14 @@ const __iconNode$c = [
   ["path", { d: "M22 4h-4", key: "gwowj6" }],
   ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
 ];
-const Sparkles = createLucideIcon("sparkles", __iconNode$c);
+const Sparkles = createLucideIcon("sparkles", __iconNode$d);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$b = [
+const __iconNode$c = [
   [
     "path",
     {
@@ -14710,14 +15218,14 @@ const __iconNode$b = [
     }
   ]
 ];
-const Star = createLucideIcon("star", __iconNode$b);
+const Star = createLucideIcon("star", __iconNode$c);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$a = [
+const __iconNode$b = [
   ["path", { d: "M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5", key: "slp6dd" }],
   [
     "path",
@@ -14728,14 +15236,14 @@ const __iconNode$a = [
   ],
   ["path", { d: "M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05", key: "wn3emo" }]
 ];
-const Store = createLucideIcon("store", __iconNode$a);
+const Store = createLucideIcon("store", __iconNode$b);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$9 = [
+const __iconNode$a = [
   [
     "path",
     {
@@ -14745,7 +15253,19 @@ const __iconNode$9 = [
   ],
   ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
 ];
-const Tag = createLucideIcon("tag", __iconNode$9);
+const Tag = createLucideIcon("tag", __iconNode$a);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$9 = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["circle", { cx: "12", cy: "12", r: "6", key: "1vlfrh" }],
+  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
+];
+const Target = createLucideIcon("target", __iconNode$9);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14753,11 +15273,10 @@ const Tag = createLucideIcon("tag", __iconNode$9);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$8 = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["circle", { cx: "12", cy: "12", r: "6", key: "1vlfrh" }],
-  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
+  ["path", { d: "M16 7h6v6", key: "box55l" }],
+  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
 ];
-const Target = createLucideIcon("target", __iconNode$8);
+const TrendingUp = createLucideIcon("trending-up", __iconNode$8);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14765,17 +15284,6 @@ const Target = createLucideIcon("target", __iconNode$8);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$7 = [
-  ["path", { d: "M16 7h6v6", key: "box55l" }],
-  ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
-];
-const TrendingUp = createLucideIcon("trending-up", __iconNode$7);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$6 = [
   ["path", { d: "M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978", key: "1n3hpd" }],
   ["path", { d: "M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978", key: "rfe1zi" }],
   ["path", { d: "M18 9h1.5a1 1 0 0 0 0-5H18", key: "7xy6bh" }],
@@ -14783,7 +15291,20 @@ const __iconNode$6 = [
   ["path", { d: "M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z", key: "1mhfuq" }],
   ["path", { d: "M6 9H4.5a1 1 0 0 1 0-5H6", key: "tex48p" }]
 ];
-const Trophy = createLucideIcon("trophy", __iconNode$6);
+const Trophy = createLucideIcon("trophy", __iconNode$7);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$6 = [
+  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
+  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
+  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
+  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+];
+const Users = createLucideIcon("users", __iconNode$6);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14791,12 +15312,17 @@ const Trophy = createLucideIcon("trophy", __iconNode$6);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$5 = [
-  ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
-  ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
-  ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
-  ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
+  [
+    "path",
+    {
+      d: "M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
+      key: "uqj9uw"
+    }
+  ],
+  ["path", { d: "M16 9a5 5 0 0 1 0 6", key: "1q6k2b" }],
+  ["path", { d: "M19.364 18.364a9 9 0 0 0 0-12.728", key: "ijwkga" }]
 ];
-const Users = createLucideIcon("users", __iconNode$5);
+const Volume2 = createLucideIcon("volume-2", __iconNode$5);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14811,10 +15337,10 @@ const __iconNode$4 = [
       key: "uqj9uw"
     }
   ],
-  ["path", { d: "M16 9a5 5 0 0 1 0 6", key: "1q6k2b" }],
-  ["path", { d: "M19.364 18.364a9 9 0 0 0 0-12.728", key: "ijwkga" }]
+  ["line", { x1: "22", x2: "16", y1: "9", y2: "15", key: "1ewh16" }],
+  ["line", { x1: "16", x2: "22", y1: "9", y2: "15", key: "5ykzw1" }]
 ];
-const Volume2 = createLucideIcon("volume-2", __iconNode$4);
+const VolumeX = createLucideIcon("volume-x", __iconNode$4);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14822,17 +15348,15 @@ const Volume2 = createLucideIcon("volume-2", __iconNode$4);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$3 = [
-  [
-    "path",
-    {
-      d: "M11 4.702a.705.705 0 0 0-1.203-.498L6.413 7.587A1.4 1.4 0 0 1 5.416 8H3a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2.416a1.4 1.4 0 0 1 .997.413l3.383 3.384A.705.705 0 0 0 11 19.298z",
-      key: "uqj9uw"
-    }
-  ],
-  ["line", { x1: "22", x2: "16", y1: "9", y2: "15", key: "1ewh16" }],
-  ["line", { x1: "16", x2: "22", y1: "9", y2: "15", key: "5ykzw1" }]
+  ["path", { d: "M12 20h.01", key: "zekei9" }],
+  ["path", { d: "M8.5 16.429a5 5 0 0 1 7 0", key: "1bycff" }],
+  ["path", { d: "M5 12.859a10 10 0 0 1 5.17-2.69", key: "1dl1wf" }],
+  ["path", { d: "M19 12.859a10 10 0 0 0-2.007-1.523", key: "4k23kn" }],
+  ["path", { d: "M2 8.82a15 15 0 0 1 4.177-2.643", key: "1grhjp" }],
+  ["path", { d: "M22 8.82a15 15 0 0 0-11.288-3.764", key: "z3jwby" }],
+  ["path", { d: "m2 2 20 20", key: "1ooewy" }]
 ];
-const VolumeX = createLucideIcon("volume-x", __iconNode$3);
+const WifiOff = createLucideIcon("wifi-off", __iconNode$3);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -19969,26 +20493,81 @@ function usePWAInstall() {
     install
   };
 }
+async function probeInternetReachability() {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return false;
+  }
+  const probe = async (url, timeoutMs = 4500) => {
+    const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+      await fetch(url, {
+        method: "GET",
+        mode: "no-cors",
+        cache: "no-store",
+        signal: controller == null ? void 0 : controller.signal
+      });
+      return true;
+    } catch {
+      return false;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
+  if (Capacitor.isNativePlatform()) {
+    const firstTry = await probe("https://clients3.google.com/generate_204");
+    if (firstTry) return true;
+    return probe("https://www.google.com/generate_204");
+  }
+  return probe(`${window.location.origin}/?online_check=${Date.now()}`);
+}
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = reactExports.useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
+  const [isChecking, setIsChecking] = reactExports.useState(false);
+  const recheckConnection = reactExports.useCallback(async () => {
+    setIsChecking(true);
+    try {
+      const ok = await probeInternetReachability();
+      setIsOnline(ok);
+      return ok;
+    } finally {
+      setIsChecking(false);
+    }
+  }, []);
   reactExports.useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
+    void recheckConnection();
+    const handleOnline = () => {
+      void recheckConnection();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void recheckConnection();
+      }
+    };
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+    document.addEventListener("visibilitychange", handleVisibility);
+    const interval = setInterval(() => {
+      void recheckConnection();
+    }, 2e4);
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      clearInterval(interval);
     };
-  }, []);
-  return isOnline;
+  }, [recheckConnection]);
+  return { isOnline, isChecking, recheckConnection };
 }
 const PWAInstallButton = () => {
   const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const [showGuide, setShowGuide] = reactExports.useState(false);
-  if (isInstalled) {
+  if (Capacitor.isNativePlatform() || isInstalled) {
     return null;
   }
   if (isInstallable) {
@@ -20076,10 +20655,35 @@ const PWAInstallButton = () => {
     )
   ] });
 };
-const OfflineIndicator = () => {
-  const isOnline = useOnlineStatus();
+const OnlineRequiredOverlay = ({
+  isOnline,
+  isChecking,
+  onRetry
+}) => {
   if (isOnline) return null;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed bottom-16 left-3 z-40 flex items-center gap-2 rounded-xl bg-amber-500 px-3 py-1.5 text-xs font-bold text-white shadow-lg", children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Offline Mode · Saved locally" }) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 z-[100] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-5 select-none", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-4 animate-scaleIn text-slate-900", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-16 h-16 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-600", children: /* @__PURE__ */ jsxRuntimeExports.jsx(WifiOff, { className: "w-8 h-8" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-lg font-extrabold text-slate-900", children: "Internet Connection Required" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-1.5 leading-relaxed", children: "Merge Factory 2D requires an active internet connection to play, sync factory rewards, and load sponsored boosts." })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        type: "button",
+        onClick: onRetry,
+        disabled: isChecking,
+        className: "w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 disabled:opacity-70 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-95 transition cursor-pointer",
+        children: isChecking ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-4 h-4 animate-spin" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Checking Connection..." })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "w-4 h-4" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Retry Connection" })
+        ] })
+      }
+    )
+  ] }) });
 };
 const SettingsView = ({ state, onUpdateState, onResetGame, onBack }) => {
   var _a, _b, _c, _d, _e, _f;
@@ -20361,7 +20965,7 @@ const SettingsView = ({ state, onUpdateState, onResetGame, onBack }) => {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "w-4 h-4" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs font-extrabold text-slate-900", children: "Privacy & Ad Disclosure" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-500 truncate", children: "Offline-first local saves · Ad-supported" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[11px] text-slate-500 truncate", children: "Online required · Local saves · Ad-supported" })
         ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -20534,514 +21138,6 @@ const OfflineModal = ({
     ] })
   ] }) });
 };
-/*! Capacitor: https://capacitorjs.com/ - MIT License */
-var ExceptionCode;
-(function(ExceptionCode2) {
-  ExceptionCode2["Unimplemented"] = "UNIMPLEMENTED";
-  ExceptionCode2["Unavailable"] = "UNAVAILABLE";
-})(ExceptionCode || (ExceptionCode = {}));
-class CapacitorException extends Error {
-  constructor(message, code, data) {
-    super(message);
-    this.message = message;
-    this.code = code;
-    this.data = data;
-  }
-}
-const getPlatformId = (win) => {
-  var _a, _b;
-  if (win === null || win === void 0 ? void 0 : win.androidBridge) {
-    return "android";
-  } else if ((_b = (_a = win === null || win === void 0 ? void 0 : win.webkit) === null || _a === void 0 ? void 0 : _a.messageHandlers) === null || _b === void 0 ? void 0 : _b.bridge) {
-    return "ios";
-  } else {
-    return "web";
-  }
-};
-const createCapacitor = (win) => {
-  const capCustomPlatform = win.CapacitorCustomPlatform || null;
-  const cap = win.Capacitor || {};
-  const Plugins = cap.Plugins = cap.Plugins || {};
-  const getPlatform = () => {
-    return capCustomPlatform !== null ? capCustomPlatform.name : getPlatformId(win);
-  };
-  const isNativePlatform = () => getPlatform() !== "web";
-  const isPluginAvailable = (pluginName) => {
-    const plugin = registeredPlugins.get(pluginName);
-    if (plugin === null || plugin === void 0 ? void 0 : plugin.platforms.has(getPlatform())) {
-      return true;
-    }
-    if (getPluginHeader(pluginName)) {
-      return true;
-    }
-    return false;
-  };
-  const getPluginHeader = (pluginName) => {
-    var _a;
-    return (_a = cap.PluginHeaders) === null || _a === void 0 ? void 0 : _a.find((h) => h.name === pluginName);
-  };
-  const handleError = (err) => win.console.error(err);
-  const registeredPlugins = /* @__PURE__ */ new Map();
-  const registerPlugin2 = (pluginName, jsImplementations = {}) => {
-    const registeredPlugin = registeredPlugins.get(pluginName);
-    if (registeredPlugin) {
-      console.warn(`Capacitor plugin "${pluginName}" already registered. Cannot register plugins twice.`);
-      return registeredPlugin.proxy;
-    }
-    const platform = getPlatform();
-    const pluginHeader = getPluginHeader(pluginName);
-    let jsImplementation;
-    const loadPluginImplementation = async () => {
-      if (!jsImplementation && platform in jsImplementations) {
-        jsImplementation = typeof jsImplementations[platform] === "function" ? jsImplementation = await jsImplementations[platform]() : jsImplementation = jsImplementations[platform];
-      } else if (capCustomPlatform !== null && !jsImplementation && "web" in jsImplementations) {
-        jsImplementation = typeof jsImplementations["web"] === "function" ? jsImplementation = await jsImplementations["web"]() : jsImplementation = jsImplementations["web"];
-      }
-      return jsImplementation;
-    };
-    const createPluginMethod = (impl, prop) => {
-      var _a, _b;
-      if (pluginHeader) {
-        const methodHeader = pluginHeader === null || pluginHeader === void 0 ? void 0 : pluginHeader.methods.find((m) => prop === m.name);
-        if (methodHeader) {
-          if (methodHeader.rtype === "promise") {
-            return (options) => cap.nativePromise(pluginName, prop.toString(), options);
-          } else {
-            return (options, callback) => cap.nativeCallback(pluginName, prop.toString(), options, callback);
-          }
-        } else if (impl) {
-          return (_a = impl[prop]) === null || _a === void 0 ? void 0 : _a.bind(impl);
-        }
-      } else if (impl) {
-        return (_b = impl[prop]) === null || _b === void 0 ? void 0 : _b.bind(impl);
-      } else {
-        throw new CapacitorException(`"${pluginName}" plugin is not implemented on ${platform}`, ExceptionCode.Unimplemented);
-      }
-    };
-    const createPluginMethodWrapper = (prop) => {
-      let remove;
-      const wrapper = (...args) => {
-        const p = loadPluginImplementation().then((impl) => {
-          const fn = createPluginMethod(impl, prop);
-          if (fn) {
-            const p2 = fn(...args);
-            remove = p2 === null || p2 === void 0 ? void 0 : p2.remove;
-            return p2;
-          } else {
-            throw new CapacitorException(`"${pluginName}.${prop}()" is not implemented on ${platform}`, ExceptionCode.Unimplemented);
-          }
-        });
-        if (prop === "addListener") {
-          p.remove = async () => remove();
-        }
-        return p;
-      };
-      wrapper.toString = () => `${prop.toString()}() { [capacitor code] }`;
-      Object.defineProperty(wrapper, "name", {
-        value: prop,
-        writable: false,
-        configurable: false
-      });
-      return wrapper;
-    };
-    const addListener = createPluginMethodWrapper("addListener");
-    const removeListener = createPluginMethodWrapper("removeListener");
-    const addListenerNative = (eventName, callback) => {
-      const call = addListener({ eventName }, callback).then((callbackId) => callbackId);
-      const remove = async () => {
-        const callbackId = await call;
-        await removeListener({
-          eventName,
-          callbackId
-        });
-      };
-      const p = new Promise((resolve) => call.then(() => resolve({ remove })));
-      p.remove = async () => {
-        console.warn(`Using addListener() without 'await' is deprecated.`);
-        await remove();
-      };
-      return p;
-    };
-    const proxy = new Proxy({}, {
-      get(_, prop) {
-        switch (prop) {
-          // https://github.com/facebook/react/issues/20030
-          case "$$typeof":
-            return void 0;
-          case "toJSON":
-            return () => ({});
-          case "addListener":
-            return pluginHeader ? addListenerNative : addListener;
-          case "removeListener":
-            return removeListener;
-          default:
-            return createPluginMethodWrapper(prop);
-        }
-      }
-    });
-    Plugins[pluginName] = proxy;
-    registeredPlugins.set(pluginName, {
-      name: pluginName,
-      proxy,
-      platforms: /* @__PURE__ */ new Set([...Object.keys(jsImplementations), ...pluginHeader ? [platform] : []])
-    });
-    return proxy;
-  };
-  if (!cap.convertFileSrc) {
-    cap.convertFileSrc = (filePath) => filePath;
-  }
-  cap.getPlatform = getPlatform;
-  cap.handleError = handleError;
-  cap.isNativePlatform = isNativePlatform;
-  cap.isPluginAvailable = isPluginAvailable;
-  cap.registerPlugin = registerPlugin2;
-  cap.Exception = CapacitorException;
-  cap.DEBUG = !!cap.DEBUG;
-  cap.isLoggingEnabled = !!cap.isLoggingEnabled;
-  return cap;
-};
-const initCapacitorGlobal = (win) => win.Capacitor = createCapacitor(win);
-const Capacitor = /* @__PURE__ */ initCapacitorGlobal(typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {});
-const registerPlugin = Capacitor.registerPlugin;
-class WebPlugin {
-  constructor() {
-    this.listeners = {};
-    this.retainedEventArguments = {};
-    this.windowListeners = {};
-  }
-  addListener(eventName, listenerFunc) {
-    let firstListener = false;
-    const listeners = this.listeners[eventName];
-    if (!listeners) {
-      this.listeners[eventName] = [];
-      firstListener = true;
-    }
-    this.listeners[eventName].push(listenerFunc);
-    const windowListener = this.windowListeners[eventName];
-    if (windowListener && !windowListener.registered) {
-      this.addWindowListener(windowListener);
-    }
-    if (firstListener) {
-      this.sendRetainedArgumentsForEvent(eventName);
-    }
-    const remove = async () => this.removeListener(eventName, listenerFunc);
-    const p = Promise.resolve({ remove });
-    return p;
-  }
-  async removeAllListeners() {
-    this.listeners = {};
-    for (const listener in this.windowListeners) {
-      this.removeWindowListener(this.windowListeners[listener]);
-    }
-    this.windowListeners = {};
-  }
-  notifyListeners(eventName, data, retainUntilConsumed) {
-    const listeners = this.listeners[eventName];
-    if (!listeners) {
-      if (retainUntilConsumed) {
-        let args = this.retainedEventArguments[eventName];
-        if (!args) {
-          args = [];
-        }
-        args.push(data);
-        this.retainedEventArguments[eventName] = args;
-      }
-      return;
-    }
-    listeners.forEach((listener) => listener(data));
-  }
-  hasListeners(eventName) {
-    var _a;
-    return !!((_a = this.listeners[eventName]) === null || _a === void 0 ? void 0 : _a.length);
-  }
-  registerWindowListener(windowEventName, pluginEventName) {
-    this.windowListeners[pluginEventName] = {
-      registered: false,
-      windowEventName,
-      pluginEventName,
-      handler: (event) => {
-        this.notifyListeners(pluginEventName, event);
-      }
-    };
-  }
-  unimplemented(msg = "not implemented") {
-    return new Capacitor.Exception(msg, ExceptionCode.Unimplemented);
-  }
-  unavailable(msg = "not available") {
-    return new Capacitor.Exception(msg, ExceptionCode.Unavailable);
-  }
-  async removeListener(eventName, listenerFunc) {
-    const listeners = this.listeners[eventName];
-    if (!listeners) {
-      return;
-    }
-    const index = listeners.indexOf(listenerFunc);
-    if (index !== -1) {
-      this.listeners[eventName].splice(index, 1);
-    }
-    if (!this.listeners[eventName].length) {
-      this.removeWindowListener(this.windowListeners[eventName]);
-    }
-  }
-  addWindowListener(handle) {
-    window.addEventListener(handle.windowEventName, handle.handler);
-    handle.registered = true;
-  }
-  removeWindowListener(handle) {
-    if (!handle) {
-      return;
-    }
-    window.removeEventListener(handle.windowEventName, handle.handler);
-    handle.registered = false;
-  }
-  sendRetainedArgumentsForEvent(eventName) {
-    const args = this.retainedEventArguments[eventName];
-    if (!args) {
-      return;
-    }
-    delete this.retainedEventArguments[eventName];
-    args.forEach((arg) => {
-      this.notifyListeners(eventName, arg);
-    });
-  }
-}
-const encode = (str) => encodeURIComponent(str).replace(/%(2[346B]|5E|60|7C)/g, decodeURIComponent).replace(/[()]/g, escape);
-const decode = (str) => str.replace(/(%[\dA-F]{2})+/gi, decodeURIComponent);
-class CapacitorCookiesPluginWeb extends WebPlugin {
-  async getCookies() {
-    const cookies = document.cookie;
-    const cookieMap = {};
-    cookies.split(";").forEach((cookie) => {
-      if (cookie.length <= 0)
-        return;
-      let [key, value] = cookie.replace(/=/, "CAP_COOKIE").split("CAP_COOKIE");
-      key = decode(key).trim();
-      value = decode(value).trim();
-      cookieMap[key] = value;
-    });
-    return cookieMap;
-  }
-  async setCookie(options) {
-    try {
-      const encodedKey = encode(options.key);
-      const encodedValue = encode(options.value);
-      const expires = options.expires ? `; expires=${options.expires.replace("expires=", "")}` : "";
-      const path = (options.path || "/").replace("path=", "");
-      const domain = options.url != null && options.url.length > 0 ? `domain=${options.url}` : "";
-      document.cookie = `${encodedKey}=${encodedValue || ""}${expires}; path=${path}; ${domain};`;
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
-  async deleteCookie(options) {
-    try {
-      document.cookie = `${options.key}=; Max-Age=0`;
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
-  async clearCookies() {
-    try {
-      const cookies = document.cookie.split(";") || [];
-      for (const cookie of cookies) {
-        document.cookie = cookie.replace(/^ +/, "").replace(/=.*/, `=;expires=${(/* @__PURE__ */ new Date()).toUTCString()};path=/`);
-      }
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
-  async clearAllCookies() {
-    try {
-      await this.clearCookies();
-    } catch (error) {
-      return Promise.reject(error);
-    }
-  }
-}
-registerPlugin("CapacitorCookies", {
-  web: () => new CapacitorCookiesPluginWeb()
-});
-const readBlobAsBase64 = async (blob) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => {
-    const base64String = reader.result;
-    resolve(base64String.indexOf(",") >= 0 ? base64String.split(",")[1] : base64String);
-  };
-  reader.onerror = (error) => reject(error);
-  reader.readAsDataURL(blob);
-});
-const normalizeHttpHeaders = (headers = {}) => {
-  const originalKeys = Object.keys(headers);
-  const loweredKeys = Object.keys(headers).map((k) => k.toLocaleLowerCase());
-  const normalized = loweredKeys.reduce((acc, key, index) => {
-    acc[key] = headers[originalKeys[index]];
-    return acc;
-  }, {});
-  return normalized;
-};
-const buildUrlParams = (params, shouldEncode = true) => {
-  if (!params)
-    return null;
-  const output = Object.entries(params).reduce((accumulator, entry) => {
-    const [key, value] = entry;
-    let encodedValue;
-    let item;
-    if (Array.isArray(value)) {
-      item = "";
-      value.forEach((str) => {
-        encodedValue = shouldEncode ? encodeURIComponent(str) : str;
-        item += `${key}=${encodedValue}&`;
-      });
-      item.slice(0, -1);
-    } else {
-      encodedValue = shouldEncode ? encodeURIComponent(value) : value;
-      item = `${key}=${encodedValue}`;
-    }
-    return `${accumulator}&${item}`;
-  }, "");
-  return output.substr(1);
-};
-const buildRequestInit = (options, extra = {}) => {
-  const output = Object.assign({ method: options.method || "GET", headers: options.headers }, extra);
-  const headers = normalizeHttpHeaders(options.headers);
-  const type = headers["content-type"] || "";
-  if (typeof options.data === "string") {
-    output.body = options.data;
-  } else if (type.includes("application/x-www-form-urlencoded")) {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(options.data || {})) {
-      params.set(key, value);
-    }
-    output.body = params.toString();
-  } else if (type.includes("multipart/form-data") || options.data instanceof FormData) {
-    const form = new FormData();
-    if (options.data instanceof FormData) {
-      options.data.forEach((value, key) => {
-        form.append(key, value);
-      });
-    } else {
-      for (const key of Object.keys(options.data)) {
-        form.append(key, options.data[key]);
-      }
-    }
-    output.body = form;
-    const headers2 = new Headers(output.headers);
-    headers2.delete("content-type");
-    output.headers = headers2;
-  } else if (type.includes("application/json") || typeof options.data === "object") {
-    output.body = JSON.stringify(options.data);
-  }
-  return output;
-};
-class CapacitorHttpPluginWeb extends WebPlugin {
-  /**
-   * Perform an Http request given a set of options
-   * @param options Options to build the HTTP request
-   */
-  async request(options) {
-    const requestInit = buildRequestInit(options, options.webFetchExtra);
-    const urlParams = buildUrlParams(options.params, options.shouldEncodeUrlParams);
-    const url = urlParams ? `${options.url}?${urlParams}` : options.url;
-    const response = await fetch(url, requestInit);
-    const contentType = response.headers.get("content-type") || "";
-    let { responseType = "text" } = response.ok ? options : {};
-    if (contentType.includes("application/json")) {
-      responseType = "json";
-    }
-    let data;
-    let blob;
-    switch (responseType) {
-      case "arraybuffer":
-      case "blob":
-        blob = await response.blob();
-        data = await readBlobAsBase64(blob);
-        break;
-      case "json":
-        data = await response.json();
-        break;
-      case "document":
-      case "text":
-      default:
-        data = await response.text();
-    }
-    const headers = {};
-    response.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    return {
-      data,
-      headers,
-      status: response.status,
-      url: response.url
-    };
-  }
-  /**
-   * Perform an Http GET request given a set of options
-   * @param options Options to build the HTTP request
-   */
-  async get(options) {
-    return this.request(Object.assign(Object.assign({}, options), { method: "GET" }));
-  }
-  /**
-   * Perform an Http POST request given a set of options
-   * @param options Options to build the HTTP request
-   */
-  async post(options) {
-    return this.request(Object.assign(Object.assign({}, options), { method: "POST" }));
-  }
-  /**
-   * Perform an Http PUT request given a set of options
-   * @param options Options to build the HTTP request
-   */
-  async put(options) {
-    return this.request(Object.assign(Object.assign({}, options), { method: "PUT" }));
-  }
-  /**
-   * Perform an Http PATCH request given a set of options
-   * @param options Options to build the HTTP request
-   */
-  async patch(options) {
-    return this.request(Object.assign(Object.assign({}, options), { method: "PATCH" }));
-  }
-  /**
-   * Perform an Http DELETE request given a set of options
-   * @param options Options to build the HTTP request
-   */
-  async delete(options) {
-    return this.request(Object.assign(Object.assign({}, options), { method: "DELETE" }));
-  }
-}
-registerPlugin("CapacitorHttp", {
-  web: () => new CapacitorHttpPluginWeb()
-});
-var SystemBarsStyle;
-(function(SystemBarsStyle2) {
-  SystemBarsStyle2["Dark"] = "DARK";
-  SystemBarsStyle2["Light"] = "LIGHT";
-  SystemBarsStyle2["Default"] = "DEFAULT";
-})(SystemBarsStyle || (SystemBarsStyle = {}));
-var SystemBarType;
-(function(SystemBarType2) {
-  SystemBarType2["StatusBar"] = "StatusBar";
-  SystemBarType2["NavigationBar"] = "NavigationBar";
-})(SystemBarType || (SystemBarType = {}));
-class SystemBarsPluginWeb extends WebPlugin {
-  async setStyle() {
-    this.unavailable("not available for web");
-  }
-  async setAnimation() {
-    this.unavailable("not available for web");
-  }
-  async show() {
-    this.unavailable("not available for web");
-  }
-  async hide() {
-    this.unavailable("not available for web");
-  }
-}
-registerPlugin("SystemBars", {
-  web: () => new SystemBarsPluginWeb()
-});
 var NativeAdTemplate;
 (function(NativeAdTemplate2) {
   NativeAdTemplate2["Small"] = "small";
@@ -21152,7 +21248,7 @@ var NativeAdPluginEvents;
   NativeAdPluginEvents2["AdPaid"] = "nativeAdPaid";
 })(NativeAdPluginEvents || (NativeAdPluginEvents = {}));
 const nativeAdBridge = registerPlugin("AdMob", {
-  web: () => __vitePreload(() => import("./web-Dsk6lnEt.js"), true ? [] : void 0).then((m) => new m.AdMobWeb())
+  web: () => __vitePreload(() => import("./web-DkPcjkTu.js"), true ? [] : void 0).then((m) => new m.AdMobWeb())
 });
 const AdMob = nativeAdBridge;
 const ADMOB_CONFIG = {
@@ -21160,9 +21256,12 @@ const ADMOB_CONFIG = {
   rewardedAdUnitId: "ca-app-pub-7953133690157762/9569517536",
   interstitialAdUnitId: "ca-app-pub-7953133690157762/5330889623"
 };
+const IS_TEST_MODE = false;
 let initPromise = null;
-let rewardedReady = false;
-let interstitialReady = false;
+let rewardedLoadPromise = null;
+let interstitialLoadPromise = null;
+let preparedRewardedUnitId = null;
+let preparedInterstitialUnitId = null;
 function isNativeAdMob() {
   try {
     return Capacitor.isNativePlatform();
@@ -21176,11 +21275,14 @@ async function initAdMob() {
   initPromise = (async () => {
     try {
       await AdMob.initialize({
-        initializeForTesting: false
+        initializeForTesting: IS_TEST_MODE
       });
       try {
-        const consentInfo = await AdMob.requestConsentInfo();
-        if (consentInfo.isConsentFormAvailable && consentInfo.status === AdmobConsentStatus.REQUIRED) {
+        const consentInfo = await Promise.race([
+          AdMob.requestConsentInfo(),
+          new Promise((resolve) => setTimeout(() => resolve(null), 3e3))
+        ]);
+        if (consentInfo && consentInfo.isConsentFormAvailable && consentInfo.status === AdmobConsentStatus.REQUIRED) {
           await AdMob.showConsentForm();
         }
       } catch (consentErr) {
@@ -21195,55 +21297,74 @@ async function initAdMob() {
   })();
   return initPromise;
 }
+let lastRewardedLoadError = null;
 async function preloadRewardedAd() {
-  if (!isNativeAdMob()) return false;
-  try {
-    await initAdMob();
-    await AdMob.prepareRewardVideoAd({
-      adId: ADMOB_CONFIG.rewardedAdUnitId,
-      isTesting: false,
-      immersiveMode: true
-    });
-    rewardedReady = true;
-    return true;
-  } catch (err) {
-    rewardedReady = false;
-    console.warn("Rewarded ad preload failed:", err);
-    return false;
-  }
+  if (!isNativeAdMob()) return null;
+  if (preparedRewardedUnitId) return preparedRewardedUnitId;
+  if (rewardedLoadPromise) return rewardedLoadPromise;
+  rewardedLoadPromise = (async () => {
+    try {
+      await initAdMob();
+      const info = await AdMob.prepareRewardVideoAd({
+        adId: ADMOB_CONFIG.rewardedAdUnitId,
+        isTesting: IS_TEST_MODE,
+        immersiveMode: true
+      });
+      preparedRewardedUnitId = (info == null ? void 0 : info.adUnitId) || ADMOB_CONFIG.rewardedAdUnitId;
+      lastRewardedLoadError = null;
+      return preparedRewardedUnitId;
+    } catch (err) {
+      preparedRewardedUnitId = null;
+      const errObj = err;
+      lastRewardedLoadError = (errObj == null ? void 0 : errObj.message) || "Unable to load ad from AdMob.";
+      console.warn("Rewarded ad preload failed:", err);
+      return null;
+    } finally {
+      rewardedLoadPromise = null;
+    }
+  })();
+  return rewardedLoadPromise;
 }
 async function preloadInterstitialAd() {
-  if (!isNativeAdMob()) return false;
-  try {
-    await initAdMob();
-    await AdMob.prepareInterstitial({
-      adId: ADMOB_CONFIG.interstitialAdUnitId,
-      isTesting: false,
-      immersiveMode: true
-    });
-    interstitialReady = true;
-    return true;
-  } catch (err) {
-    interstitialReady = false;
-    console.warn("Interstitial ad preload failed:", err);
-    return false;
-  }
+  if (!isNativeAdMob()) return null;
+  if (preparedInterstitialUnitId) return preparedInterstitialUnitId;
+  if (interstitialLoadPromise) return interstitialLoadPromise;
+  interstitialLoadPromise = (async () => {
+    try {
+      await initAdMob();
+      const info = await AdMob.prepareInterstitial({
+        adId: ADMOB_CONFIG.interstitialAdUnitId,
+        isTesting: IS_TEST_MODE,
+        immersiveMode: true
+      });
+      preparedInterstitialUnitId = (info == null ? void 0 : info.adUnitId) || ADMOB_CONFIG.interstitialAdUnitId;
+      return preparedInterstitialUnitId;
+    } catch (err) {
+      preparedInterstitialUnitId = null;
+      console.warn("Interstitial ad preload failed:", err);
+      return null;
+    } finally {
+      interstitialLoadPromise = null;
+    }
+  })();
+  return interstitialLoadPromise;
 }
 async function showNativeRewardedAd() {
   if (!isNativeAdMob()) {
     return { completed: false, error: "Not running in native Android app" };
   }
   await initAdMob();
-  if (!rewardedReady) {
-    const loaded = await preloadRewardedAd();
-    if (!loaded) {
+  let unitIdToShow = preparedRewardedUnitId;
+  if (!unitIdToShow) {
+    unitIdToShow = await preloadRewardedAd();
+    if (!unitIdToShow) {
       return {
         completed: false,
-        error: "Ad is still loading or unavailable right now. Please try again in a moment."
+        error: lastRewardedLoadError || "Ad could not be loaded yet. Check your internet connection and tap Try Again."
       };
     }
   }
-  rewardedReady = false;
+  preparedRewardedUnitId = null;
   let dismissedHandle = null;
   let failedHandle = null;
   let dismissedPromiseResolve = null;
@@ -21258,7 +21379,7 @@ async function showNativeRewardedAd() {
       dismissedPromiseResolve == null ? void 0 : dismissedPromiseResolve();
     });
     await AdMob.showRewardVideoAd({
-      adId: ADMOB_CONFIG.rewardedAdUnitId
+      adId: unitIdToShow
     });
     await Promise.race([
       dismissedPromise,
@@ -21293,13 +21414,14 @@ async function showNativeInterstitialAd() {
     return { completed: true };
   }
   await initAdMob();
-  if (!interstitialReady) {
-    const loaded = await preloadInterstitialAd();
-    if (!loaded) {
+  let unitIdToShow = preparedInterstitialUnitId;
+  if (!unitIdToShow) {
+    unitIdToShow = await preloadInterstitialAd();
+    if (!unitIdToShow) {
       return { completed: true };
     }
   }
-  interstitialReady = false;
+  preparedInterstitialUnitId = null;
   let dismissedHandle = null;
   let failedHandle = null;
   const waitForClose = new Promise((resolve) => {
@@ -21314,7 +21436,7 @@ async function showNativeInterstitialAd() {
   });
   try {
     await AdMob.showInterstitial({
-      adId: ADMOB_CONFIG.interstitialAdUnitId
+      adId: unitIdToShow
     });
     await waitForClose;
     void preloadInterstitialAd();
@@ -21540,6 +21662,7 @@ const FloatingText = ({ items, onRemoveItem }) => {
 };
 function App() {
   var _a, _b;
+  const { isOnline, isChecking, recheckConnection } = useOnlineStatus();
   const [gameState, setGameState] = reactExports.useState(() => createInitialState());
   const [activeTab, setActiveTab] = reactExports.useState("factory");
   const [marketSubTab, setMarketSubTab] = reactExports.useState("marketplace");
@@ -21575,6 +21698,7 @@ function App() {
     };
   }, []);
   reactExports.useEffect(() => {
+    if (!isOnline) return;
     const timer = setInterval(() => {
       setGameState((prev) => {
         let incomeThisSecond = 0;
@@ -21608,10 +21732,11 @@ function App() {
       });
     }, 1e3);
     return () => clearInterval(timer);
-  }, []);
+  }, [isOnline]);
   const playMode = ((_a = gameState.settings) == null ? void 0 : _a.playMode) || "standard";
   const energyIntervalMs = playMode === "relaxed" ? 5e3 : playMode === "express" ? 6e3 : 8e3;
   reactExports.useEffect(() => {
+    if (!isOnline) return;
     const timer = setInterval(() => {
       setGameState((prev) => {
         if (prev.energy >= prev.maxEnergy) return prev;
@@ -21622,7 +21747,7 @@ function App() {
       });
     }, energyIntervalMs);
     return () => clearInterval(timer);
-  }, [energyIntervalMs]);
+  }, [energyIntervalMs, isOnline]);
   reactExports.useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
@@ -21771,10 +21896,17 @@ function App() {
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsx(FloatingText, { items: floatingTexts, onRemoveItem: removeFloatingText }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(OfflineIndicator, {})
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      OnlineRequiredOverlay,
+      {
+        isOnline,
+        isChecking,
+        onRetry: () => void recheckConnection()
+      }
+    )
   ] });
 }
-{
+if (!Capacitor.isNativePlatform()) {
   try {
     registerSW({ immediate: true });
   } catch {
