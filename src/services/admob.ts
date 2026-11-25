@@ -20,6 +20,8 @@ export interface NativeAdResult {
   error?: string;
 }
 
+const IS_TEST_MODE = import.meta.env.VITE_ADMOB_TEST_MODE === 'true';
+
 let initPromise: Promise<void> | null = null;
 let rewardedReady = false;
 let interstitialReady = false;
@@ -39,7 +41,7 @@ export async function initAdMob(): Promise<void> {
   initPromise = (async () => {
     try {
       await AdMob.initialize({
-        initializeForTesting: false
+        initializeForTesting: IS_TEST_MODE
       });
 
       try {
@@ -71,7 +73,7 @@ export async function preloadRewardedAd(): Promise<boolean> {
     await initAdMob();
     await AdMob.prepareRewardVideoAd({
       adId: ADMOB_CONFIG.rewardedAdUnitId,
-      isTesting: false,
+      isTesting: IS_TEST_MODE,
       immersiveMode: true
     });
     rewardedReady = true;
@@ -89,7 +91,7 @@ export async function preloadInterstitialAd(): Promise<boolean> {
     await initAdMob();
     await AdMob.prepareInterstitial({
       adId: ADMOB_CONFIG.interstitialAdUnitId,
-      isTesting: false,
+      isTesting: IS_TEST_MODE,
       immersiveMode: true
     });
     interstitialReady = true;

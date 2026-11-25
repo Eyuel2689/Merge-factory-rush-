@@ -87,11 +87,24 @@ EOF
           chmod +x gradlew
           ./gradlew bundleRelease
 
-      - name: Prepare .aab artifact
+      - name: Prepare production .aab artifact
         run: |
           cp android/app/build/outputs/bundle/release/app-release.aab aab-output/MergeFactory2D-release.aab
 
-      - name: Upload Play Store AAB
+      - name: Build phone-installable Test-Ads APK
+        env:
+          VITE_ADMOB_TEST_MODE: "true"
+          VITE_ADMOB_REWARDED_ID: "ca-app-pub-3940256099942544/5224354917"
+          VITE_ADMOB_INTERSTITIAL_ID: "ca-app-pub-3940256099942544/1033173712"
+        run: |
+          npm run build
+          npx cap sync android
+          cd android
+          ./gradlew assembleRelease
+          cd ..
+          cp android/app/build/outputs/apk/release/app-release.apk aab-output/MergeFactory2D-test-ads.apk
+
+      - name: Upload Play Store AAB & Test APK
         uses: actions/upload-artifact@v4
         with:
           name: MergeFactory2D-PlayStore-AAB
