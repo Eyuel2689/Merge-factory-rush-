@@ -2,11 +2,10 @@ name: Build Android Release AAB
 
 on:
   push:
-    branches: ["main", "master"]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-aab:
@@ -110,3 +109,18 @@ EOF
           name: MergeFactory2D-PlayStore-AAB
           path: aab-output/
           retention-days: 14
+
+      - name: Publish direct AAB & APK download to GitHub Releases
+        if: github.ref_name == 'main' || github.ref_name == 'master'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest-android-build --yes --cleanup-tag || true
+          gh release create latest-android-build \
+            aab-output/MergeFactory2D-release.aab \
+            aab-output/MergeFactory2D-test-ads.apk \
+            --target "${{ github.sha }}" \
+            --title "Latest Android Build" \
+            --notes "Direct downloads: MergeFactory2D-release.aab (Google Play Console) and MergeFactory2D-test-ads.apk (safe test ads for phone testing). Keep your upload keystore backup from the Actions Artifacts tab."
+
