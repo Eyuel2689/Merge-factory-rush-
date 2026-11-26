@@ -19,13 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           enablement: true
       - name: Ensure GitHub Actions Pages source
@@ -39,7 +39,7 @@ jobs:
           GITHUB_PAGES: "true"
         run: npm run build
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
 
@@ -48,15 +48,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -139,7 +139,7 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release.apk aab-output/MergeFactory2D-test-ads.apk
 
       - name: Upload Play Store AAB & Test APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: MergeFactory2D-PlayStore-AAB
           path: aab-output/
@@ -157,6 +157,11 @@ jobs:
             --target "${{ github.sha }}" \
             --title "Latest Android Build" \
             --notes "Direct downloads: MergeFactory2D-release.aab (Google Play Console) and MergeFactory2D-test-ads.apk (safe test ads for phone testing). Keep your upload keystore backup from the Actions Artifacts tab."
+          {
+            echo "## Android Build Ready"
+            echo "- Direct Downloads (Releases): https://github.com/${{ github.repository }}/releases/tag/latest-android-build"
+            echo "- ZIP with keystore backup: scroll down to **Artifacts -> MergeFactory2D-PlayStore-AAB** on this page."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Deploy to GitHub Pages
