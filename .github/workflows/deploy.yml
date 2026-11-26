@@ -97,15 +97,15 @@ jobs:
               -dname "CN=Merge Factory 2D, O=MergeFactory, C=US"
             cp android/app/release.jks aab-output/upload-keystore.jks
             base64 -w 0 android/app/release.jks > aab-output/RELEASE_KEYSTORE_BASE64.txt
-            cat > aab-output/KEYSTORE_CREDENTIALS.txt <<EOF
-Save this upload keystore & credentials privately! You need the SAME keystore to publish future app updates on Google Play Console.
-
-Add these 4 GitHub Repository Secrets (Settings -> Secrets and variables -> Actions) for future updates:
-RELEASE_KEYSTORE_BASE64 = (contents of RELEASE_KEYSTORE_BASE64.txt)
-RELEASE_STORE_PASSWORD  = $GENERATED_PASS
-RELEASE_KEY_ALIAS       = mergefactory
-RELEASE_KEY_PASSWORD    = $GENERATED_PASS
-EOF
+            printf '%s\n' \
+              "Save this upload keystore & credentials privately! You need the SAME keystore to publish future app updates on Google Play Console." \
+              "" \
+              "Add these 4 GitHub Repository Secrets (Settings -> Secrets and variables -> Actions) for future updates:" \
+              "RELEASE_KEYSTORE_BASE64 = (contents of RELEASE_KEYSTORE_BASE64.txt)" \
+              "RELEASE_STORE_PASSWORD  = $GENERATED_PASS" \
+              "RELEASE_KEY_ALIAS       = mergefactory" \
+              "RELEASE_KEY_PASSWORD    = $GENERATED_PASS" \
+              > aab-output/KEYSTORE_CREDENTIALS.txt
             echo "RELEASE_STORE_FILE=release.jks" >> "$GITHUB_ENV"
             echo "RELEASE_STORE_PASSWORD=$GENERATED_PASS" >> "$GITHUB_ENV"
             echo "RELEASE_KEY_ALIAS=mergefactory" >> "$GITHUB_ENV"
