@@ -4,6 +4,7 @@ import { createInitialState } from './data/gameData';
 import { loadGame, saveGame } from './utils/storage';
 import { soundManager } from './utils/audio';
 import { checkAndResetDailyState } from './utils/dailyMissions';
+import { getPlantIncomeMultiplier, getLocalTodayString } from './utils/economy';
 
 import { TopBar } from './components/TopBar';
 import { BottomNav, TabType } from './components/BottomNav';
@@ -11,6 +12,7 @@ import { FactoryBoard } from './components/FactoryBoard';
 import { OrdersView } from './components/OrdersView';
 import { MachinesView } from './components/MachinesView';
 import { ShopView, MarketSubTab } from './components/ShopView';
+import { ArcadeView } from './components/ArcadeView';
 import { SettingsView } from './components/SettingsView';
 import { OfflineModal } from './components/OfflineModal';
 import { AdModal, AdRewardType } from './components/AdModal';
@@ -94,7 +96,7 @@ export default function App() {
 
         if (incomeThisSecond <= 0) return prev;
 
-        incomeThisSecond *= 1 + (prev.factoryLevel - 1) * 0.15;
+        incomeThisSecond *= getPlantIncomeMultiplier(prev);
         if (prev.productionSurgeUntil && prev.productionSurgeUntil > Date.now()) {
           incomeThisSecond *= 1.5;
         }
@@ -142,10 +144,19 @@ export default function App() {
     const timer = setInterval(() => {
       setGameState(prev => {
         const { dailyState: newDaily, wasReset } = checkAndResetDailyState(prev.dailyState, prev.level);
-        if (!wasReset) return prev;
+        const todayStr = getLocalTodayString();
+        const spinReset = (prev.arcade?.lastSpinResetDate || '') !== todayStr;
+        if (!wasReset && !spinReset) return prev;
         return {
           ...prev,
-          dailyState: newDaily
+          dailyState: wasReset ? newDaily : prev.dailyState,
+          arcade: spinReset
+            ? {
+                ...prev.arcade,
+                dailyCasinoSpinsLeft: 3,
+                lastSpinResetDate: todayStr
+              }
+            : prev.arcade
         };
       });
     }, 10000);
@@ -189,6 +200,11 @@ export default function App() {
   ).length;
 
   const unfulfilledOrdersCount = gameState.orders.length;
+  const todayStr = getLocalTodayString();
+  const hasFreeWheelSpin =
+    (gameState.arcade?.lastFreeSpinDate || '') !== todayStr &&
+    (gameState.arcade?.lastSpinResetDate !== todayStr ||
+      (gameState.arcade?.dailyCasinoSpinsLeft ?? 3) > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F2F6FF] via-[#FFFDF7] to-[#EFFAF6] text-slate-900 flex flex-col font-sans select-none relative overflow-x-hidden">
@@ -261,6 +277,17 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'arcade' && (
+          <ArcadeView
+            state={gameState}
+            onUpdateState={setGameState}
+            onTriggerRewardedAd={(rewardType, onComplete, adDetail) =>
+              setActiveAd({ rewardType, onComplete, adDetail })
+            }
+            onAddFloatingText={addFloatingText}
+          />
+        )}
+
         {activeTab === 'settings' && (
           <SettingsView
             state={gameState}
@@ -284,6 +311,7 @@ export default function App() {
         unclaimedAchievementsCount={unclaimedAchievementsCount}
         unfulfilledOrdersCount={unfulfilledOrdersCount}
         unclaimedDailyCount={unclaimedDailyCount}
+        hasFreeWheelSpin={hasFreeWheelSpin}
       />
 
       {/* Offline Rewards Modal */}

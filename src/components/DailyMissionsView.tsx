@@ -3,7 +3,7 @@ import { GameState, DailyMission } from '../types';
 import { getTimeUntilNextDailyReset, checkAndResetDailyState } from '../utils/dailyMissions';
 import { Flame, Clock, CheckCircle2, Gift, RefreshCw, Target } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import confetti from 'canvas-confetti';
+import { triggerConfetti } from '../utils/confettiSafe';
 
 interface DailyMissionsViewProps {
   state: GameState;
@@ -41,7 +41,7 @@ export const DailyMissionsView: React.FC<DailyMissionsViewProps> = ({
     if (!mission.completed || mission.claimed) return;
 
     soundManager.playSound('upgrade', state.settings.soundFx);
-    confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
+    triggerConfetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
 
     onUpdateState(prev => {
       const nextMissions = prev.dailyState.missions.map(m =>
@@ -78,15 +78,15 @@ export const DailyMissionsView: React.FC<DailyMissionsViewProps> = ({
     }
   };
 
-  const grandCoins = 200 + state.level * 25;
-  const grandGems = 6;
+  const grandCoins = 240 + state.level * 30;
+  const grandGems = 3;
   const grandEnergy = 15;
 
   const handleClaimGrandChest = () => {
     if (!canClaimGrandReward) return;
 
     soundManager.playSound('upgrade', state.settings.soundFx);
-    confetti({ particleCount: 70, spread: 80, origin: { y: 0.45 } });
+    triggerConfetti({ particleCount: 70, spread: 80, origin: { y: 0.45 } });
 
     onUpdateState(prev => ({
       ...prev,

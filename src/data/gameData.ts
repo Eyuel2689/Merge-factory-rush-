@@ -1,5 +1,6 @@
-import { ItemDefinition, Machine, Worker, Achievement, GameState, Order, ItemCategory, BoardItem, OrderRequirement, ConsumableId, ConsumableDef } from '../types';
+import { ItemDefinition, Machine, Worker, Achievement, GameState, Order, ItemCategory, BoardItem, OrderRequirement, ConsumableId, ConsumableDef, PremiumPerkId, BoardTheme } from '../types';
 import { createInitialDailyState } from '../utils/dailyMissions';
+import { getLocalTodayString } from '../utils/economy';
 
 import imgTimberJoinery from '../assets/images/asset_timber_joinery_1795164661800.jpg';
 import imgGeneratorBox from '../assets/images/item_generator_box_1788367065127.jpg';
@@ -373,9 +374,11 @@ export const CONSUMABLE_DEFINITIONS: Record<ConsumableId, ConsumableDef> = {
     name: 'Quick Charge Cell',
     icon: '🔋',
     shortDesc: 'Instantly restores +15 Energy to keep spawning parts.',
-    fullDesc: 'A compact high-capacity workshop cell that bypasses normal cooldowns to restore +15 Energy immediately when your grid stalls.',
-    usageGuide: 'Tap Use when your Energy bar runs low. Requires watching a short sponsored ad to refill each spent charge.',
+    fullDesc: 'A medium-value workshop cell that restores +15 Energy immediately when your grid runs low.',
+    usageGuide: 'Refill free by watching a short rewarded ad, buy individually with Coins, or stock up via IAP Booster Bundles.',
     maxStock: 3,
+    coinPrice: 160,
+    gemPrice: 2,
     badge: '+15 Energy',
     bgGradient: 'from-emerald-400 to-teal-500',
     borderClass: 'border-emerald-300'
@@ -385,9 +388,11 @@ export const CONSUMABLE_DEFINITIONS: Record<ConsumableId, ConsumableDef> = {
     name: 'Tier Promoter Kit',
     icon: '🛠️',
     shortDesc: 'Promotes your highest Tier 1–5 grid item by +1 Tier.',
-    fullDesc: 'Precision calibration kit that upgrades your highest Tier 1–5 workshop component directly to the next engineering tier without needing a duplicate.',
-    usageGuide: 'Keep a Tier 1–5 component on your Assembly Grid, then tap Use. Refill empty charges anytime by watching a rewarded ad.',
-    maxStock: 2,
+    fullDesc: 'Precision calibration kit that upgrades your highest Tier 1–5 component directly to the next engineering tier.',
+    usageGuide: 'Keep a Tier 1–5 part on your Assembly Grid and tap Use. Refill via rewarded ads or Coins.',
+    maxStock: 3,
+    coinPrice: 420,
+    gemPrice: 4,
     badge: '+1 Tier Upgrade',
     bgGradient: 'from-amber-400 to-orange-500',
     borderClass: 'border-amber-300'
@@ -398,8 +403,10 @@ export const CONSUMABLE_DEFINITIONS: Record<ConsumableId, ConsumableDef> = {
     icon: '🚀',
     shortDesc: 'Harvests 10m Machine Coins + triggers 2x Plant Output (5m).',
     fullDesc: 'Supercharges automated plant machinery to deliver an instant 10-minute coin payout (minimum 250 Coins) plus a 5-minute 2x production boost.',
-    usageGuide: 'Tap Use from the Workshop or Supply Hub for instant working capital. Watch a rewarded ad to recharge spent cores.',
-    maxStock: 2,
+    usageGuide: 'Tap Use from the Workshop or Boosts tab. Refill via rewarded ads, Coins, or IAP Tactical Bundle.',
+    maxStock: 3,
+    coinPrice: 540,
+    gemPrice: 6,
     badge: '10m + 2x Output',
     bgGradient: 'from-violet-400 to-indigo-500',
     borderClass: 'border-violet-300'
@@ -409,9 +416,11 @@ export const CONSUMABLE_DEFINITIONS: Record<ConsumableId, ConsumableDef> = {
     name: 'Smart Merge Magnet',
     icon: '🧲',
     shortDesc: 'Auto-merges up to 2 matching pairs on your grid (+25% Coins).',
-    fullDesc: 'Sweeps the Assembly Grid to automatically combine up to 2 matching component pairs at once, clearing space and granting +25% bonus merge Coins.',
-    usageGuide: 'Best used when your 5x5 grid is getting crowded. Refill depleted magnets by watching a rewarded ad.',
-    maxStock: 2,
+    fullDesc: 'Sweeps the Assembly Grid to automatically combine up to 2 matching component pairs at once, clearing space and granting bonus Coins.',
+    usageGuide: 'Best used when your 5x5 grid fills up. Refill free via rewarded ads or purchase with Coins.',
+    maxStock: 3,
+    coinPrice: 320,
+    gemPrice: 3,
     badge: 'Auto-Merge ×2',
     bgGradient: 'from-sky-400 to-cyan-500',
     borderClass: 'border-sky-300'
@@ -423,6 +432,148 @@ export const CONSUMABLE_LIST: ConsumableDef[] = [
   CONSUMABLE_DEFINITIONS.tier_catalyst,
   CONSUMABLE_DEFINITIONS.overclock_core,
   CONSUMABLE_DEFINITIONS.merge_magnet
+];
+
+export interface PremiumPerkDef {
+  id: PremiumPerkId;
+  name: string;
+  icon: string;
+  shortDesc: string;
+  effectPerLevel: string;
+  maxLevel: number;
+  baseGemCost: number;
+  gemStep: number;
+  baseCoinCost: number;
+  coinStep: number;
+  accentGradient: string;
+}
+
+export const PREMIUM_PERK_DEFS: PremiumPerkDef[] = [
+  {
+    id: 'goldenTurbineLevel',
+    name: 'Golden Plant Turbine',
+    icon: '⚡',
+    shortDesc: 'Permanently boosts all automated machine & offline Coin income.',
+    effectPerLevel: '+25% Plant Income / lvl',
+    maxLevel: 5,
+    baseGemCost: 8,
+    gemStep: 6,
+    baseCoinCost: 900,
+    coinStep: 800,
+    accentGradient: 'from-amber-400 to-orange-500'
+  },
+  {
+    id: 'vipContractLevel',
+    name: 'Golden Contract Seal',
+    icon: '👑',
+    shortDesc: 'Permanently increases Coin payouts when shipping Client Contracts.',
+    effectPerLevel: '+15% Contract Coins / lvl',
+    maxLevel: 4,
+    baseGemCost: 10,
+    gemStep: 7,
+    baseCoinCost: 1200,
+    coinStep: 1000,
+    accentGradient: 'from-emerald-400 to-teal-500'
+  },
+  {
+    id: 'energyCoreUpgrades',
+    name: 'Expanded Energy Core',
+    icon: '🔋',
+    shortDesc: 'Permanently increases your maximum Energy tank capacity by +5.',
+    effectPerLevel: '+5 Max Energy / lvl',
+    maxLevel: 5,
+    baseGemCost: 6,
+    gemStep: 5,
+    baseCoinCost: 650,
+    coinStep: 550,
+    accentGradient: 'from-sky-400 to-indigo-500'
+  },
+  {
+    id: 'vaultExpansions',
+    name: 'Master Vault Expander',
+    icon: '🗝️',
+    shortDesc: 'Permanently adds +4 storage slots to your Asset Vault.',
+    effectPerLevel: '+4 Vault Slots / lvl',
+    maxLevel: 4,
+    baseGemCost: 7,
+    gemStep: 5,
+    baseCoinCost: 750,
+    coinStep: 650,
+    accentGradient: 'from-violet-400 to-purple-500'
+  }
+];
+
+export interface BoardThemeDef {
+  id: BoardTheme;
+  name: string;
+  swatch: string;
+  unlockCoins: number;
+  tagline: string;
+}
+
+export const BOARD_THEME_CATALOG: BoardThemeDef[] = [
+  { id: 'amber', name: 'Sunny Amber', swatch: 'bg-amber-400', unlockCoins: 0, tagline: 'Starter Workshop' },
+  { id: 'emerald', name: 'Fresh Mint', swatch: 'bg-emerald-400', unlockCoins: 0, tagline: 'Starter Workshop' },
+  { id: 'ocean', name: 'Sky Cyan', swatch: 'bg-sky-400', unlockCoins: 350, tagline: 'Coastal Lab' },
+  { id: 'purple', name: 'Lavender Bloom', swatch: 'bg-violet-400', unlockCoins: 650, tagline: 'Quantum Studio' },
+  { id: 'obsidian', name: 'Obsidian Gold', swatch: 'bg-slate-900 ring-2 ring-amber-400', unlockCoins: 1400, tagline: 'Executive Floor' }
+];
+
+export interface PremiumCrateDef {
+  id: 'artisan_crate' | 'executive_crate' | 'mythic_crate';
+  name: string;
+  icon: string;
+  description: string;
+  minTier: number;
+  maxTier: number;
+  bonusEnergy: number;
+  bonusConsumable?: ConsumableId;
+  coinPrice?: number;
+  gemPrice: number;
+  badge: string;
+  gradient: string;
+}
+
+export const PREMIUM_CRATE_DEFS: PremiumCrateDef[] = [
+  {
+    id: 'artisan_crate',
+    name: 'Artisan Supply Crate',
+    icon: '📦',
+    description: 'Delivers a guaranteed Tier 3–4 part onto your Grid/Vault + 6 Energy.',
+    minTier: 3,
+    maxTier: 4,
+    bonusEnergy: 6,
+    coinPrice: 380,
+    gemPrice: 5,
+    badge: 'Tier 3–4 Part',
+    gradient: 'from-sky-400 to-blue-600'
+  },
+  {
+    id: 'executive_crate',
+    name: 'Executive Vault Crate',
+    icon: '🧰',
+    description: 'Scarce Gem Crate: Tier 4–5 part + 1 Tier Promoter Kit + 10 Energy.',
+    minTier: 4,
+    maxTier: 5,
+    bonusEnergy: 10,
+    bonusConsumable: 'tier_catalyst',
+    gemPrice: 12,
+    badge: 'Scarce · Tier 4–5',
+    gradient: 'from-amber-400 to-rose-500'
+  },
+  {
+    id: 'mythic_crate',
+    name: 'Sovereign Apex Crate',
+    icon: '👑',
+    description: 'Scarce Mythic Crate: Tier 5–6 flagship part + 1 Overclock Core + 15 Energy.',
+    minTier: 5,
+    maxTier: 6,
+    bonusEnergy: 15,
+    bonusConsumable: 'overclock_core',
+    gemPrice: 22,
+    badge: 'Mythic · Tier 5–6',
+    gradient: 'from-violet-500 to-fuchsia-600'
+  }
 ];
 
 export function getMaxTierForCategory(_category: ItemCategory = 'wood'): number {
@@ -734,7 +885,7 @@ export function generateRandomOrder(id: string, playerLevel: number): Order {
   const coinReward = Math.max(12, Math.round(totalCoinValue * multiplier));
   const xpReward = Math.round(totalCoinValue * 0.25 + 15);
 
-  // Gems are rare: only awarded for hard Tier 4+ or multi-item priority orders
+  // Gems are scarce: only awarded in small amounts for hard Tier 4+ or priority multi-item contracts
   let gemReward: number | undefined = undefined;
   if (highestRequiredTier >= 5) {
     gemReward = 2;
@@ -772,9 +923,11 @@ export function createInitialState(): GameState {
     generateRandomOrder('ord_3', 1)
   ];
 
+  const today = getLocalTodayString();
+
   return {
-    coins: 60,
-    gems: 5,
+    coins: 80,
+    gems: 3,
     energy: 25,
     maxEnergy: 25,
     lastEnergyRefillTime: Date.now(),
@@ -799,7 +952,7 @@ export function createInitialState(): GameState {
       totalMerges: 0,
       totalOrdersCompleted: 0,
       highestTierUnlocked: 1,
-      totalCoinsEarned: 60
+      totalCoinsEarned: 80
     },
 
     consumables: {
@@ -807,6 +960,23 @@ export function createInitialState(): GameState {
       tier_catalyst: 0,
       overclock_core: 0,
       merge_magnet: 0
+    },
+    premiumPerks: {
+      goldenTurbineLevel: 0,
+      energyCoreUpgrades: 0,
+      vaultExpansions: 0,
+      vipContractLevel: 0
+    },
+    ownedIapIds: [],
+    unlockedThemes: ['amber', 'emerald'],
+    arcade: {
+      lastFreeSpinDate: '',
+      dailyCasinoSpinsLeft: 3,
+      lastSpinResetDate: today,
+      totalSpins: 0,
+      totalGamesPlayed: 0,
+      totalArcadeCoinsWon: 0,
+      biggestWin: 0
     },
     doubleEarningsUntil: 0,
     productionSurgeUntil: 0,

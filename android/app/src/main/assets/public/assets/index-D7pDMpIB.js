@@ -13212,8 +13212,8 @@ function generateDailyMissions(playerLevel, dateStr) {
       icon: "⚙️",
       target: mergeTarget,
       current: 0,
-      coinReward: 95 + playerLevel * 15,
-      gemReward: 2,
+      coinReward: 110 + playerLevel * 15,
+      gemReward: 1,
       energyReward: 6,
       completed: false,
       claimed: false
@@ -13226,8 +13226,8 @@ function generateDailyMissions(playerLevel, dateStr) {
       icon: "📦",
       target: orderTarget,
       current: 0,
-      coinReward: 140 + playerLevel * 20,
-      gemReward: 3,
+      coinReward: 160 + playerLevel * 20,
+      gemReward: 1,
       energyReward: 8,
       completed: false,
       claimed: false
@@ -13240,8 +13240,8 @@ function generateDailyMissions(playerLevel, dateStr) {
       icon: "🔧",
       target: spawnTarget,
       current: 0,
-      coinReward: 80 + playerLevel * 10,
-      gemReward: 1,
+      coinReward: 95 + playerLevel * 12,
+      gemReward: 0,
       energyReward: 10,
       completed: false,
       claimed: false
@@ -13255,8 +13255,8 @@ function generateDailyMissions(playerLevel, dateStr) {
       target: 1,
       targetTier,
       current: 0,
-      coinReward: 120 + playerLevel * 20,
-      gemReward: 3,
+      coinReward: 140 + playerLevel * 20,
+      gemReward: 2,
       completed: false,
       claimed: false
     },
@@ -13268,8 +13268,8 @@ function generateDailyMissions(playerLevel, dateStr) {
       icon: "🏭",
       target: upgradeTarget,
       current: 0,
-      coinReward: 115 + playerLevel * 18,
-      gemReward: 2,
+      coinReward: 130 + playerLevel * 18,
+      gemReward: 1,
       completed: false,
       claimed: false
     }
@@ -13350,6 +13350,35 @@ function recordDailyMissionProgress(dailyState, type, amount = 1, extra) {
     ...dailyState,
     missions: nextMissions
   };
+}
+const IAP_SKU_GOLDEN_TURBINE = "com.mergefactory.game.vip_golden_turbine";
+const IAP_SKU_CONTRACT_SEAL = "com.mergefactory.game.vip_contract_seal";
+function getPlantIncomeMultiplier(state) {
+  var _a, _b;
+  let mult = 1 + (Math.max(1, state.factoryLevel || 1) - 1) * 0.15;
+  const turbineLvl = Math.max(0, Number((_a = state.premiumPerks) == null ? void 0 : _a.goldenTurbineLevel) || 0);
+  if (turbineLvl > 0) {
+    mult *= 1 + turbineLvl * 0.25;
+  }
+  if ((_b = state.ownedIapIds) == null ? void 0 : _b.includes(IAP_SKU_GOLDEN_TURBINE)) {
+    mult *= 2;
+  }
+  return mult;
+}
+function getContractPayoutMultiplier(state) {
+  var _a, _b;
+  const vipLvl = Math.max(0, Number((_a = state.premiumPerks) == null ? void 0 : _a.vipContractLevel) || 0);
+  let mult = 1 + vipLvl * 0.15;
+  if ((_b = state.ownedIapIds) == null ? void 0 : _b.includes(IAP_SKU_CONTRACT_SEAL)) {
+    mult *= 1.5;
+  }
+  return mult;
+}
+function getLocalTodayString(date = /* @__PURE__ */ new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 const imgTimberJoinery = "/assets/asset_timber_joinery_1795164661800-CpRj8Y-f.jpg";
 const imgGeneratorBox = "/assets/item_generator_box_1788367065127-D9l-6-V5.jpg";
@@ -13718,9 +13747,11 @@ const CONSUMABLE_DEFINITIONS = {
     name: "Quick Charge Cell",
     icon: "🔋",
     shortDesc: "Instantly restores +15 Energy to keep spawning parts.",
-    fullDesc: "A compact high-capacity workshop cell that bypasses normal cooldowns to restore +15 Energy immediately when your grid stalls.",
-    usageGuide: "Tap Use when your Energy bar runs low. Requires watching a short sponsored ad to refill each spent charge.",
+    fullDesc: "A medium-value workshop cell that restores +15 Energy immediately when your grid runs low.",
+    usageGuide: "Refill free by watching a short rewarded ad, buy individually with Coins, or stock up via IAP Booster Bundles.",
     maxStock: 3,
+    coinPrice: 160,
+    gemPrice: 2,
     badge: "+15 Energy",
     bgGradient: "from-emerald-400 to-teal-500",
     borderClass: "border-emerald-300"
@@ -13730,9 +13761,11 @@ const CONSUMABLE_DEFINITIONS = {
     name: "Tier Promoter Kit",
     icon: "🛠️",
     shortDesc: "Promotes your highest Tier 1–5 grid item by +1 Tier.",
-    fullDesc: "Precision calibration kit that upgrades your highest Tier 1–5 workshop component directly to the next engineering tier without needing a duplicate.",
-    usageGuide: "Keep a Tier 1–5 component on your Assembly Grid, then tap Use. Refill empty charges anytime by watching a rewarded ad.",
-    maxStock: 2,
+    fullDesc: "Precision calibration kit that upgrades your highest Tier 1–5 component directly to the next engineering tier.",
+    usageGuide: "Keep a Tier 1–5 part on your Assembly Grid and tap Use. Refill via rewarded ads or Coins.",
+    maxStock: 3,
+    coinPrice: 420,
+    gemPrice: 4,
     badge: "+1 Tier Upgrade",
     bgGradient: "from-amber-400 to-orange-500",
     borderClass: "border-amber-300"
@@ -13743,8 +13776,10 @@ const CONSUMABLE_DEFINITIONS = {
     icon: "🚀",
     shortDesc: "Harvests 10m Machine Coins + triggers 2x Plant Output (5m).",
     fullDesc: "Supercharges automated plant machinery to deliver an instant 10-minute coin payout (minimum 250 Coins) plus a 5-minute 2x production boost.",
-    usageGuide: "Tap Use from the Workshop or Supply Hub for instant working capital. Watch a rewarded ad to recharge spent cores.",
-    maxStock: 2,
+    usageGuide: "Tap Use from the Workshop or Boosts tab. Refill via rewarded ads, Coins, or IAP Tactical Bundle.",
+    maxStock: 3,
+    coinPrice: 540,
+    gemPrice: 6,
     badge: "10m + 2x Output",
     bgGradient: "from-violet-400 to-indigo-500",
     borderClass: "border-violet-300"
@@ -13754,9 +13789,11 @@ const CONSUMABLE_DEFINITIONS = {
     name: "Smart Merge Magnet",
     icon: "🧲",
     shortDesc: "Auto-merges up to 2 matching pairs on your grid (+25% Coins).",
-    fullDesc: "Sweeps the Assembly Grid to automatically combine up to 2 matching component pairs at once, clearing space and granting +25% bonus merge Coins.",
-    usageGuide: "Best used when your 5x5 grid is getting crowded. Refill depleted magnets by watching a rewarded ad.",
-    maxStock: 2,
+    fullDesc: "Sweeps the Assembly Grid to automatically combine up to 2 matching component pairs at once, clearing space and granting bonus Coins.",
+    usageGuide: "Best used when your 5x5 grid fills up. Refill free via rewarded ads or purchase with Coins.",
+    maxStock: 3,
+    coinPrice: 320,
+    gemPrice: 3,
     badge: "Auto-Merge ×2",
     bgGradient: "from-sky-400 to-cyan-500",
     borderClass: "border-sky-300"
@@ -13767,6 +13804,108 @@ const CONSUMABLE_LIST = [
   CONSUMABLE_DEFINITIONS.tier_catalyst,
   CONSUMABLE_DEFINITIONS.overclock_core,
   CONSUMABLE_DEFINITIONS.merge_magnet
+];
+const PREMIUM_PERK_DEFS = [
+  {
+    id: "goldenTurbineLevel",
+    name: "Golden Plant Turbine",
+    icon: "⚡",
+    shortDesc: "Permanently boosts all automated machine & offline Coin income.",
+    effectPerLevel: "+25% Plant Income / lvl",
+    maxLevel: 5,
+    baseGemCost: 8,
+    gemStep: 6,
+    baseCoinCost: 900,
+    coinStep: 800,
+    accentGradient: "from-amber-400 to-orange-500"
+  },
+  {
+    id: "vipContractLevel",
+    name: "Golden Contract Seal",
+    icon: "👑",
+    shortDesc: "Permanently increases Coin payouts when shipping Client Contracts.",
+    effectPerLevel: "+15% Contract Coins / lvl",
+    maxLevel: 4,
+    baseGemCost: 10,
+    gemStep: 7,
+    baseCoinCost: 1200,
+    coinStep: 1e3,
+    accentGradient: "from-emerald-400 to-teal-500"
+  },
+  {
+    id: "energyCoreUpgrades",
+    name: "Expanded Energy Core",
+    icon: "🔋",
+    shortDesc: "Permanently increases your maximum Energy tank capacity by +5.",
+    effectPerLevel: "+5 Max Energy / lvl",
+    maxLevel: 5,
+    baseGemCost: 6,
+    gemStep: 5,
+    baseCoinCost: 650,
+    coinStep: 550,
+    accentGradient: "from-sky-400 to-indigo-500"
+  },
+  {
+    id: "vaultExpansions",
+    name: "Master Vault Expander",
+    icon: "🗝️",
+    shortDesc: "Permanently adds +4 storage slots to your Asset Vault.",
+    effectPerLevel: "+4 Vault Slots / lvl",
+    maxLevel: 4,
+    baseGemCost: 7,
+    gemStep: 5,
+    baseCoinCost: 750,
+    coinStep: 650,
+    accentGradient: "from-violet-400 to-purple-500"
+  }
+];
+const BOARD_THEME_CATALOG = [
+  { id: "amber", name: "Sunny Amber", swatch: "bg-amber-400", unlockCoins: 0, tagline: "Starter Workshop" },
+  { id: "emerald", name: "Fresh Mint", swatch: "bg-emerald-400", unlockCoins: 0, tagline: "Starter Workshop" },
+  { id: "ocean", name: "Sky Cyan", swatch: "bg-sky-400", unlockCoins: 350, tagline: "Coastal Lab" },
+  { id: "purple", name: "Lavender Bloom", swatch: "bg-violet-400", unlockCoins: 650, tagline: "Quantum Studio" },
+  { id: "obsidian", name: "Obsidian Gold", swatch: "bg-slate-900 ring-2 ring-amber-400", unlockCoins: 1400, tagline: "Executive Floor" }
+];
+const PREMIUM_CRATE_DEFS = [
+  {
+    id: "artisan_crate",
+    name: "Artisan Supply Crate",
+    icon: "📦",
+    description: "Delivers a guaranteed Tier 3–4 part onto your Grid/Vault + 6 Energy.",
+    minTier: 3,
+    maxTier: 4,
+    bonusEnergy: 6,
+    coinPrice: 380,
+    gemPrice: 5,
+    badge: "Tier 3–4 Part",
+    gradient: "from-sky-400 to-blue-600"
+  },
+  {
+    id: "executive_crate",
+    name: "Executive Vault Crate",
+    icon: "🧰",
+    description: "Scarce Gem Crate: Tier 4–5 part + 1 Tier Promoter Kit + 10 Energy.",
+    minTier: 4,
+    maxTier: 5,
+    bonusEnergy: 10,
+    bonusConsumable: "tier_catalyst",
+    gemPrice: 12,
+    badge: "Scarce · Tier 4–5",
+    gradient: "from-amber-400 to-rose-500"
+  },
+  {
+    id: "mythic_crate",
+    name: "Sovereign Apex Crate",
+    icon: "👑",
+    description: "Scarce Mythic Crate: Tier 5–6 flagship part + 1 Overclock Core + 15 Energy.",
+    minTier: 5,
+    maxTier: 6,
+    bonusEnergy: 15,
+    bonusConsumable: "overclock_core",
+    gemPrice: 22,
+    badge: "Mythic · Tier 5–6",
+    gradient: "from-violet-500 to-fuchsia-600"
+  }
 ];
 function getMaxTierForCategory(_category = "wood") {
   return 6;
@@ -14070,9 +14209,10 @@ function createInitialState() {
     generateRandomOrder("ord_2", 1),
     generateRandomOrder("ord_3", 1)
   ];
+  const today = getLocalTodayString();
   return {
-    coins: 60,
-    gems: 5,
+    coins: 80,
+    gems: 3,
     energy: 25,
     maxEnergy: 25,
     lastEnergyRefillTime: Date.now(),
@@ -14092,13 +14232,30 @@ function createInitialState() {
       totalMerges: 0,
       totalOrdersCompleted: 0,
       highestTierUnlocked: 1,
-      totalCoinsEarned: 60
+      totalCoinsEarned: 80
     },
     consumables: {
       energy_cell: 1,
       tier_catalyst: 0,
       overclock_core: 0,
       merge_magnet: 0
+    },
+    premiumPerks: {
+      goldenTurbineLevel: 0,
+      energyCoreUpgrades: 0,
+      vaultExpansions: 0,
+      vipContractLevel: 0
+    },
+    ownedIapIds: [],
+    unlockedThemes: ["amber", "emerald"],
+    arcade: {
+      lastFreeSpinDate: "",
+      dailyCasinoSpinsLeft: 3,
+      lastSpinResetDate: today,
+      totalSpins: 0,
+      totalGamesPlayed: 0,
+      totalArcadeCoinsWon: 0,
+      biggestWin: 0
     },
     doubleEarningsUntil: 0,
     productionSurgeUntil: 0,
@@ -14118,7 +14275,7 @@ function createInitialState() {
 }
 const SAVE_KEY = "merge_factory_2d_save_v1";
 function loadGame() {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) {
@@ -14145,7 +14302,16 @@ function loadGame() {
           coinsPerSec += machineRate;
         }
       });
-      coinsPerSec *= 1 + ((savedState.factoryLevel || 1) - 1) * 0.15;
+      coinsPerSec *= getPlantIncomeMultiplier({
+        factoryLevel: savedState.factoryLevel || 1,
+        premiumPerks: savedState.premiumPerks || {
+          goldenTurbineLevel: 0,
+          energyCoreUpgrades: 0,
+          vaultExpansions: 0,
+          vipContractLevel: 0
+        },
+        ownedIapIds: Array.isArray(savedState.ownedIapIds) ? savedState.ownedIapIds : []
+      });
       offlineCoins = Math.floor(coinsPerSec * cappedSeconds);
     }
     const initialState = createInitialState();
@@ -14206,6 +14372,14 @@ function loadGame() {
     const sanitizedAchievements = Array.isArray(savedState.achievements) && savedState.achievements.length > 0 ? savedState.achievements.filter((a) => a && typeof a === "object") : initialState.achievements;
     const finalOrders = sanitizedOrders.length > 0 ? sanitizedOrders : initialState.orders;
     const { isVip: _ignoredVip, adsRemoved: _ignoredAds, ...cleanSaved } = savedState;
+    const todayStr = getLocalTodayString();
+    const savedArcade = savedState.arcade;
+    const spinResetNeeded = !savedArcade || savedArcade.lastSpinResetDate !== todayStr;
+    const validThemes = ["amber", "emerald", "purple", "ocean", "obsidian"];
+    const rawUnlocked = Array.isArray(savedState.unlockedThemes) ? savedState.unlockedThemes.filter((t) => validThemes.includes(t)) : [];
+    const unlockedThemes = Array.from(/* @__PURE__ */ new Set(["amber", "emerald", ...rawUnlocked]));
+    const requestedTheme = (_a = savedState.settings) == null ? void 0 : _a.boardTheme;
+    const safeBoardTheme = requestedTheme && unlockedThemes.includes(requestedTheme) ? requestedTheme : "amber";
     const mergedState = {
       ...initialState,
       ...cleanSaved,
@@ -14229,6 +14403,18 @@ function loadGame() {
         ...initialState.consumables,
         ...savedState.consumables || {}
       },
+      premiumPerks: {
+        ...initialState.premiumPerks,
+        ...savedState.premiumPerks || {}
+      },
+      ownedIapIds: Array.isArray(savedState.ownedIapIds) ? savedState.ownedIapIds.filter((id) => typeof id === "string") : [],
+      unlockedThemes,
+      arcade: {
+        ...initialState.arcade,
+        ...savedArcade || {},
+        dailyCasinoSpinsLeft: spinResetNeeded ? 3 : Math.max(0, Number((savedArcade == null ? void 0 : savedArcade.dailyCasinoSpinsLeft) ?? 3)),
+        lastSpinResetDate: todayStr
+      },
       lastSavedTimestamp: now,
       stats: {
         ...initialState.stats,
@@ -14237,9 +14423,10 @@ function loadGame() {
       settings: {
         ...initialState.settings,
         ...savedState.settings || {},
-        playMode: ((_a = savedState.settings) == null ? void 0 : _a.playMode) || initialState.settings.playMode,
-        showFloatingRewards: ((_b = savedState.settings) == null ? void 0 : _b.showFloatingRewards) ?? initialState.settings.showFloatingRewards,
-        showOrderBadges: ((_c = savedState.settings) == null ? void 0 : _c.showOrderBadges) ?? initialState.settings.showOrderBadges
+        boardTheme: safeBoardTheme,
+        playMode: ((_b = savedState.settings) == null ? void 0 : _b.playMode) || initialState.settings.playMode,
+        showFloatingRewards: ((_c = savedState.settings) == null ? void 0 : _c.showFloatingRewards) ?? initialState.settings.showFloatingRewards,
+        showOrderBadges: ((_d = savedState.settings) == null ? void 0 : _d.showOrderBadges) ?? initialState.settings.showOrderBadges
       }
     };
     return {
@@ -14264,7 +14451,10 @@ function saveGame(state) {
   }
 }
 function resetGameSave() {
-  localStorage.removeItem(SAVE_KEY);
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+  }
   return createInitialState();
 }
 class SoundManager {
@@ -14554,65 +14744,65 @@ const createLucideIcon = (iconName, iconNode) => {
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$V = [
+const __iconNode$$ = [
   ["rect", { width: "20", height: "5", x: "2", y: "3", rx: "1", key: "1wp1u1" }],
   ["path", { d: "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8", key: "1s80jp" }],
   ["path", { d: "M10 12h4", key: "a56b0p" }]
 ];
-const Archive = createLucideIcon("archive", __iconNode$V);
+const Archive = createLucideIcon("archive", __iconNode$$);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$U = [
+const __iconNode$_ = [
   ["path", { d: "m12 19-7-7 7-7", key: "1l729n" }],
   ["path", { d: "M19 12H5", key: "x3x0zl" }]
 ];
-const ArrowLeft = createLucideIcon("arrow-left", __iconNode$U);
+const ArrowLeft = createLucideIcon("arrow-left", __iconNode$_);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$T = [
+const __iconNode$Z = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$T);
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$Z);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$S = [
+const __iconNode$Y = [
   ["path", { d: "m21 16-4 4-4-4", key: "f6ql7i" }],
   ["path", { d: "M17 20V4", key: "1ejh1v" }],
   ["path", { d: "m3 8 4-4 4 4", key: "11wl7u" }],
   ["path", { d: "M7 4v16", key: "1glfcx" }]
 ];
-const ArrowUpDown = createLucideIcon("arrow-up-down", __iconNode$S);
+const ArrowUpDown = createLucideIcon("arrow-up-down", __iconNode$Y);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$R = [
+const __iconNode$X = [
   ["path", { d: "M7 7h10v10", key: "1tivn9" }],
   ["path", { d: "M7 17 17 7", key: "1vkiza" }]
 ];
-const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$R);
+const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$X);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$Q = [
+const __iconNode$W = [
   ["path", { d: "M12 7v14", key: "1akyts" }],
   [
     "path",
@@ -14622,7 +14812,68 @@ const __iconNode$Q = [
     }
   ]
 ];
-const BookOpen = createLucideIcon("book-open", __iconNode$Q);
+const BookOpen = createLucideIcon("book-open", __iconNode$W);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$V = [
+  ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
+  ["path", { d: "M18 17V9", key: "2bz60n" }],
+  ["path", { d: "M13 17V5", key: "1frdt8" }],
+  ["path", { d: "M8 17v-3", key: "17ska0" }]
+];
+const ChartColumn = createLucideIcon("chart-column", __iconNode$V);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$U = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$U);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$T = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$T);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$S = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
+const ChevronUp = createLucideIcon("chevron-up", __iconNode$S);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$R = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+];
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$R);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$Q = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["path", { d: "m16 12-4-4-4 4", key: "177agl" }],
+  ["path", { d: "M12 16V8", key: "1sbj14" }]
+];
+const CircleArrowUp = createLucideIcon("circle-arrow-up", __iconNode$Q);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -14630,89 +14881,28 @@ const BookOpen = createLucideIcon("book-open", __iconNode$Q);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$P = [
-  ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
-  ["path", { d: "M18 17V9", key: "2bz60n" }],
-  ["path", { d: "M13 17V5", key: "1frdt8" }],
-  ["path", { d: "M8 17v-3", key: "17ska0" }]
-];
-const ChartColumn = createLucideIcon("chart-column", __iconNode$P);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$O = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$O);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$N = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$N);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$M = [["path", { d: "m18 15-6-6-6 6", key: "153udz" }]];
-const ChevronUp = createLucideIcon("chevron-up", __iconNode$M);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$L = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-  ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
-];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$L);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$K = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["path", { d: "m16 12-4-4-4 4", key: "177agl" }],
-  ["path", { d: "M12 16V8", key: "1sbj14" }]
-];
-const CircleArrowUp = createLucideIcon("circle-arrow-up", __iconNode$K);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$J = [
   ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
   ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
 ];
-const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$J);
+const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$P);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$I = [
+const __iconNode$O = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$I);
+const CircleCheck = createLucideIcon("circle-check", __iconNode$O);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$H = [
+const __iconNode$N = [
   [
     "path",
     {
@@ -14722,26 +14912,26 @@ const __iconNode$H = [
   ],
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
 ];
-const CirclePlay = createLucideIcon("circle-play", __iconNode$H);
+const CirclePlay = createLucideIcon("circle-play", __iconNode$N);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$G = [
+const __iconNode$M = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M8 12h8", key: "1wcyev" }],
   ["path", { d: "M12 8v8", key: "napkw2" }]
 ];
-const CirclePlus = createLucideIcon("circle-plus", __iconNode$G);
+const CirclePlus = createLucideIcon("circle-plus", __iconNode$M);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$F = [
+const __iconNode$L = [
   ["rect", { width: "8", height: "4", x: "8", y: "2", rx: "1", ry: "1", key: "tgr4d6" }],
   [
     "path",
@@ -14752,38 +14942,38 @@ const __iconNode$F = [
   ],
   ["path", { d: "m9 14 2 2 4-4", key: "df797q" }]
 ];
-const ClipboardCheck = createLucideIcon("clipboard-check", __iconNode$F);
+const ClipboardCheck = createLucideIcon("clipboard-check", __iconNode$L);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$E = [
+const __iconNode$K = [
   ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }],
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$E);
+const Clock = createLucideIcon("clock", __iconNode$K);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$D = [
+const __iconNode$J = [
   ["circle", { cx: "8", cy: "8", r: "6", key: "3yglwk" }],
   ["path", { d: "M18.09 10.37A6 6 0 1 1 10.34 18", key: "t5s6rm" }],
   ["path", { d: "M7 6h1v4", key: "1obek4" }],
   ["path", { d: "m16.71 13.88.7.71-2.82 2.82", key: "1rbuyh" }]
 ];
-const Coins = createLucideIcon("coins", __iconNode$D);
+const Coins = createLucideIcon("coins", __iconNode$J);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$C = [
+const __iconNode$I = [
   ["path", { d: "M10 2v2", key: "7u0qdc" }],
   ["path", { d: "M14 2v2", key: "6buw04" }],
   [
@@ -14795,14 +14985,14 @@ const __iconNode$C = [
   ],
   ["path", { d: "M6 2v2", key: "colzsn" }]
 ];
-const Coffee = createLucideIcon("coffee", __iconNode$C);
+const Coffee = createLucideIcon("coffee", __iconNode$I);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$B = [
+const __iconNode$H = [
   ["path", { d: "M12 20v2", key: "1lh1kg" }],
   ["path", { d: "M12 2v2", key: "tus03m" }],
   ["path", { d: "M17 20v2", key: "1rnc9c" }],
@@ -14818,26 +15008,61 @@ const __iconNode$B = [
   ["rect", { x: "4", y: "4", width: "16", height: "16", rx: "2", key: "1vbyd7" }],
   ["rect", { x: "8", y: "8", width: "8", height: "8", rx: "1", key: "z9xiuo" }]
 ];
-const Cpu = createLucideIcon("cpu", __iconNode$B);
+const Cpu = createLucideIcon("cpu", __iconNode$H);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$A = [
+const __iconNode$G = [
+  [
+    "path",
+    {
+      d: "M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z",
+      key: "1vdc57"
+    }
+  ],
+  ["path", { d: "M5 21h14", key: "11awu3" }]
+];
+const Crown = createLucideIcon("crown", __iconNode$G);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$F = [
+  ["rect", { width: "12", height: "12", x: "2", y: "10", rx: "2", ry: "2", key: "6agr2n" }],
+  [
+    "path",
+    { d: "m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6", key: "1o487t" }
+  ],
+  ["path", { d: "M6 18h.01", key: "uhywen" }],
+  ["path", { d: "M10 14h.01", key: "ssrbsk" }],
+  ["path", { d: "M15 6h.01", key: "cblpky" }],
+  ["path", { d: "M18 9h.01", key: "2061c0" }]
+];
+const Dices = createLucideIcon("dices", __iconNode$F);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$E = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-const Download = createLucideIcon("download", __iconNode$A);
+const Download = createLucideIcon("download", __iconNode$E);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$z = [
+const __iconNode$D = [
   ["path", { d: "M12 16h.01", key: "1drbdi" }],
   ["path", { d: "M16 16h.01", key: "1f9h7w" }],
   [
@@ -14849,14 +15074,14 @@ const __iconNode$z = [
   ],
   ["path", { d: "M8 16h.01", key: "18s6g9" }]
 ];
-const Factory = createLucideIcon("factory", __iconNode$z);
+const Factory = createLucideIcon("factory", __iconNode$D);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$y = [
+const __iconNode$C = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M7 3v18", key: "bbkbws" }],
   ["path", { d: "M3 7.5h4", key: "zfgn84" }],
@@ -14866,14 +15091,14 @@ const __iconNode$y = [
   ["path", { d: "M17 7.5h4", key: "myr1c1" }],
   ["path", { d: "M17 16.5h4", key: "go4c1d" }]
 ];
-const Film = createLucideIcon("film", __iconNode$y);
+const Film = createLucideIcon("film", __iconNode$C);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$x = [
+const __iconNode$B = [
   [
     "path",
     {
@@ -14882,25 +15107,25 @@ const __iconNode$x = [
     }
   ]
 ];
-const Flame = createLucideIcon("flame", __iconNode$x);
+const Flame = createLucideIcon("flame", __iconNode$B);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$w = [
+const __iconNode$A = [
   ["path", { d: "m12 14 4-4", key: "9kzdfg" }],
   ["path", { d: "M3.34 19a10 10 0 1 1 17.32 0", key: "19p75a" }]
 ];
-const Gauge = createLucideIcon("gauge", __iconNode$w);
+const Gauge = createLucideIcon("gauge", __iconNode$A);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$v = [
+const __iconNode$z = [
   ["path", { d: "M10.5 3 8 9l4 13 4-13-2.5-6", key: "b3dvk1" }],
   [
     "path",
@@ -14911,14 +15136,14 @@ const __iconNode$v = [
   ],
   ["path", { d: "M2 9h20", key: "16fsjt" }]
 ];
-const Gem = createLucideIcon("gem", __iconNode$v);
+const Gem = createLucideIcon("gem", __iconNode$z);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$u = [
+const __iconNode$y = [
   ["rect", { x: "3", y: "8", width: "18", height: "4", rx: "1", key: "bkv52" }],
   ["path", { d: "M12 8v13", key: "1c76mn" }],
   ["path", { d: "M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7", key: "6wjy6b" }],
@@ -14930,26 +15155,26 @@ const __iconNode$u = [
     }
   ]
 ];
-const Gift = createLucideIcon("gift", __iconNode$u);
+const Gift = createLucideIcon("gift", __iconNode$y);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$t = [
+const __iconNode$x = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 16v-4", key: "1dtifu" }],
   ["path", { d: "M12 8h.01", key: "e9boi3" }]
 ];
-const Info = createLucideIcon("info", __iconNode$t);
+const Info = createLucideIcon("info", __iconNode$x);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$s = [
+const __iconNode$w = [
   [
     "path",
     {
@@ -14972,45 +15197,56 @@ const __iconNode$s = [
     }
   ]
 ];
-const Layers = createLucideIcon("layers", __iconNode$s);
+const Layers = createLucideIcon("layers", __iconNode$w);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$r = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-const LoaderCircle = createLucideIcon("loader-circle", __iconNode$r);
+const __iconNode$v = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+const LoaderCircle = createLucideIcon("loader-circle", __iconNode$v);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$q = [
+const __iconNode$u = [
+  ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
+  ["path", { d: "M7 11V7a5 5 0 0 1 9.9-1", key: "1mm8w8" }]
+];
+const LockOpen = createLucideIcon("lock-open", __iconNode$u);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$t = [
   ["rect", { width: "18", height: "11", x: "3", y: "11", rx: "2", ry: "2", key: "1w4ew1" }],
   ["path", { d: "M7 11V7a5 5 0 0 1 10 0v4", key: "fwvmzm" }]
 ];
-const Lock = createLucideIcon("lock", __iconNode$q);
+const Lock = createLucideIcon("lock", __iconNode$t);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$p = [
+const __iconNode$s = [
   ["path", { d: "M9 18V5l12-2v13", key: "1jmyc2" }],
   ["circle", { cx: "6", cy: "18", r: "3", key: "fqmcym" }],
   ["circle", { cx: "18", cy: "16", r: "3", key: "1hluhg" }]
 ];
-const Music = createLucideIcon("music", __iconNode$p);
+const Music = createLucideIcon("music", __iconNode$s);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$o = [
+const __iconNode$r = [
   [
     "path",
     {
@@ -15022,14 +15258,14 @@ const __iconNode$o = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$o);
+const Package = createLucideIcon("package", __iconNode$r);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$n = [
+const __iconNode$q = [
   [
     "path",
     {
@@ -15042,38 +15278,38 @@ const __iconNode$n = [
   ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor", key: "qy21gx" }],
   ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor", key: "fotxhn" }]
 ];
-const Palette = createLucideIcon("palette", __iconNode$n);
+const Palette = createLucideIcon("palette", __iconNode$q);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$m = [
+const __iconNode$p = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-const Plus = createLucideIcon("plus", __iconNode$m);
+const Plus = createLucideIcon("plus", __iconNode$p);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$l = [
+const __iconNode$o = [
   ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
   ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
   ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
   ["path", { d: "M8 16H3v5", key: "1cv678" }]
 ];
-const RefreshCw = createLucideIcon("refresh-cw", __iconNode$l);
+const RefreshCw = createLucideIcon("refresh-cw", __iconNode$o);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$k = [
+const __iconNode$n = [
   [
     "path",
     {
@@ -15091,25 +15327,36 @@ const __iconNode$k = [
   ["path", { d: "M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0", key: "1f8sc4" }],
   ["path", { d: "M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5", key: "qeys4" }]
 ];
-const Rocket = createLucideIcon("rocket", __iconNode$k);
+const Rocket = createLucideIcon("rocket", __iconNode$n);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$j = [
+const __iconNode$m = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }]
 ];
-const RotateCcw = createLucideIcon("rotate-ccw", __iconNode$j);
+const RotateCcw = createLucideIcon("rotate-ccw", __iconNode$m);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$i = [
+const __iconNode$l = [
+  ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8", key: "1p45f6" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }]
+];
+const RotateCw = createLucideIcon("rotate-cw", __iconNode$l);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$k = [
   [
     "path",
     {
@@ -15119,14 +15366,14 @@ const __iconNode$i = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const Settings = createLucideIcon("settings", __iconNode$i);
+const Settings = createLucideIcon("settings", __iconNode$k);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$h = [
+const __iconNode$j = [
   [
     "path",
     {
@@ -15136,14 +15383,32 @@ const __iconNode$h = [
   ],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const ShieldCheck = createLucideIcon("shield-check", __iconNode$h);
+const ShieldCheck = createLucideIcon("shield-check", __iconNode$j);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$g = [
+const __iconNode$i = [
+  ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }],
+  ["path", { d: "M3.103 6.034h17.794", key: "awc11p" }],
+  [
+    "path",
+    {
+      d: "M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z",
+      key: "o988cm"
+    }
+  ]
+];
+const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$i);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$h = [
   ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
   ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
   [
@@ -15154,14 +15419,14 @@ const __iconNode$g = [
     }
   ]
 ];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$g);
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$h);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$f = [
+const __iconNode$g = [
   ["path", { d: "M10 8h4", key: "1sr2af" }],
   ["path", { d: "M12 21v-9", key: "17s77i" }],
   ["path", { d: "M12 8V3", key: "13r4qs" }],
@@ -15172,7 +15437,18 @@ const __iconNode$f = [
   ["path", { d: "M5 10V3", key: "cb8scm" }],
   ["path", { d: "M5 21v-7", key: "1w1uti" }]
 ];
-const SlidersVertical = createLucideIcon("sliders-vertical", __iconNode$f);
+const SlidersVertical = createLucideIcon("sliders-vertical", __iconNode$g);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$f = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+const Smartphone = createLucideIcon("smartphone", __iconNode$f);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -15180,17 +15456,6 @@ const SlidersVertical = createLucideIcon("sliders-vertical", __iconNode$f);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$e = [
-  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
-  ["path", { d: "M12 18h.01", key: "mhygvu" }]
-];
-const Smartphone = createLucideIcon("smartphone", __iconNode$e);
-/**
- * @license lucide-react v0.546.0 - ISC
- *
- * This source code is licensed under the ISC license.
- * See the LICENSE file in the root directory of this source tree.
- */
-const __iconNode$d = [
   [
     "path",
     {
@@ -15202,14 +15467,14 @@ const __iconNode$d = [
   ["path", { d: "M22 4h-4", key: "gwowj6" }],
   ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
 ];
-const Sparkles = createLucideIcon("sparkles", __iconNode$d);
+const Sparkles = createLucideIcon("sparkles", __iconNode$e);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$c = [
+const __iconNode$d = [
   [
     "path",
     {
@@ -15218,14 +15483,14 @@ const __iconNode$c = [
     }
   ]
 ];
-const Star = createLucideIcon("star", __iconNode$c);
+const Star = createLucideIcon("star", __iconNode$d);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$b = [
+const __iconNode$c = [
   ["path", { d: "M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5", key: "slp6dd" }],
   [
     "path",
@@ -15236,14 +15501,14 @@ const __iconNode$b = [
   ],
   ["path", { d: "M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05", key: "wn3emo" }]
 ];
-const Store = createLucideIcon("store", __iconNode$b);
+const Store = createLucideIcon("store", __iconNode$c);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */
-const __iconNode$a = [
+const __iconNode$b = [
   [
     "path",
     {
@@ -15253,7 +15518,19 @@ const __iconNode$a = [
   ],
   ["circle", { cx: "7.5", cy: "7.5", r: ".5", fill: "currentColor", key: "kqv944" }]
 ];
-const Tag = createLucideIcon("tag", __iconNode$a);
+const Tag = createLucideIcon("tag", __iconNode$b);
+/**
+ * @license lucide-react v0.546.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */
+const __iconNode$a = [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+  ["circle", { cx: "12", cy: "12", r: "6", key: "1vlfrh" }],
+  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
+];
+const Target = createLucideIcon("target", __iconNode$a);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -15261,11 +15538,18 @@ const Tag = createLucideIcon("tag", __iconNode$a);
  * See the LICENSE file in the root directory of this source tree.
  */
 const __iconNode$9 = [
-  ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-  ["circle", { cx: "12", cy: "12", r: "6", key: "1vlfrh" }],
-  ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }]
+  [
+    "path",
+    {
+      d: "M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z",
+      key: "qn84l0"
+    }
+  ],
+  ["path", { d: "M13 5v2", key: "dyzc3o" }],
+  ["path", { d: "M13 17v2", key: "1ont0d" }],
+  ["path", { d: "M13 11v2", key: "1wjjxi" }]
 ];
-const Target = createLucideIcon("target", __iconNode$9);
+const Ticket = createLucideIcon("ticket", __iconNode$9);
 /**
  * @license lucide-react v0.546.0 - ISC
  *
@@ -15516,7 +15800,8 @@ const BottomNav = ({
   onChangeTab,
   unclaimedAchievementsCount,
   unfulfilledOrdersCount,
-  unclaimedDailyCount = 0
+  unclaimedDailyCount = 0,
+  hasFreeWheelSpin = false
 }) => {
   const goalsBadge = unclaimedAchievementsCount + unclaimedDailyCount + unfulfilledOrdersCount;
   const tabs = [
@@ -15528,7 +15813,7 @@ const BottomNav = ({
     },
     {
       id: "orders",
-      label: "Contracts & Tasks",
+      label: "Orders",
       Icon: ClipboardCheck,
       badge: goalsBadge,
       activeClass: "bg-emerald-100 text-emerald-900 border-emerald-300 shadow-sm"
@@ -15541,23 +15826,30 @@ const BottomNav = ({
     },
     {
       id: "shop",
-      label: "Marketplace",
+      label: "Shop",
       Icon: Store,
       activeClass: "bg-violet-100 text-violet-900 border-violet-300 shadow-sm"
+    },
+    {
+      id: "arcade",
+      label: "Casino",
+      Icon: Dices,
+      badge: hasFreeWheelSpin ? 1 : 0,
+      activeClass: "bg-rose-100 text-rose-900 border-rose-300 shadow-sm"
     }
   ];
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { className: "bg-white/95 backdrop-blur-md border-t border-indigo-200/75 text-slate-600 px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] sticky bottom-0 z-30 select-none shadow-[0_-4px_20px_rgba(15,23,42,0.06)] touch-manipulation", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-4 gap-1.5 max-w-lg mx-auto", children: tabs.map((tab) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("nav", { className: "bg-white/95 backdrop-blur-md border-t border-indigo-200/75 text-slate-600 px-1.5 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] sticky bottom-0 z-30 select-none shadow-[0_-4px_20px_rgba(15,23,42,0.06)] touch-manipulation", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-5 gap-1 max-w-lg mx-auto", children: tabs.map((tab) => {
     const isActive = activeTab === tab.id;
     const IconComponent = tab.Icon;
     return /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "button",
       {
         onClick: () => onChangeTab(tab.id),
-        className: `relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-150 cursor-pointer whitespace-nowrap ${isActive ? `${tab.activeClass} font-bold` : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-transparent"}`,
+        className: `relative flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-150 cursor-pointer whitespace-nowrap min-h-[44px] ${isActive ? `${tab.activeClass} font-bold` : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-transparent"}`,
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(IconComponent, { className: "w-4 h-4 shrink-0" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] tracking-tight leading-none mt-1 font-semibold truncate max-w-full", children: tab.label }),
-          tab.badge && tab.badge > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "absolute top-1 right-2 min-w-4 h-4 px-1 rounded-full bg-amber-400 text-slate-950 font-extrabold text-[9px] flex items-center justify-center tabular-nums shadow-sm", children: tab.badge }) : null
+          tab.badge && tab.badge > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "absolute top-1 right-1.5 min-w-4 h-4 px-1 rounded-full bg-amber-400 text-slate-950 font-extrabold text-[9px] flex items-center justify-center tabular-nums shadow-sm", children: tab.badge }) : null
         ]
       },
       tab.id
@@ -15656,7 +15948,7 @@ function executeConsumableUse(prev, id) {
         coinsPerSec += rate;
       }
     });
-    coinsPerSec *= 1 + (prev.factoryLevel - 1) * 0.15;
+    coinsPerSec *= getPlantIncomeMultiplier(prev);
     const burstCoins = Math.max(250, Math.round(coinsPerSec * 600));
     const now = Date.now();
     const baseUntil = Math.max(now, prev.doubleEarningsUntil || 0);
@@ -16780,6 +17072,12 @@ var module$1 = {};
 })(), module$1, false);
 const confetti = module$1.exports;
 module$1.exports.create;
+function triggerConfetti(options) {
+  try {
+    confetti(options);
+  } catch {
+  }
+}
 const DailyMissionsView = ({
   state,
   onUpdateState,
@@ -16802,7 +17100,7 @@ const DailyMissionsView = ({
   const handleClaimMission = (mission) => {
     if (!mission.completed || mission.claimed) return;
     soundManager.playSound("upgrade", state.settings.soundFx);
-    confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
+    triggerConfetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
     onUpdateState((prev) => {
       const nextMissions = prev.dailyState.missions.map(
         (m) => m.id === mission.id ? { ...m, claimed: true } : m
@@ -16834,13 +17132,13 @@ const DailyMissionsView = ({
       );
     }
   };
-  const grandCoins = 200 + state.level * 25;
-  const grandGems = 6;
+  const grandCoins = 240 + state.level * 30;
+  const grandGems = 3;
   const grandEnergy = 15;
   const handleClaimGrandChest = () => {
     if (!canClaimGrandReward) return;
     soundManager.playSound("upgrade", state.settings.soundFx);
-    confetti({ particleCount: 70, spread: 80, origin: { y: 0.45 } });
+    triggerConfetti({ particleCount: 70, spread: 80, origin: { y: 0.45 } });
     onUpdateState((prev) => ({
       ...prev,
       coins: prev.coins + grandCoins,
@@ -17177,6 +17475,8 @@ const ItemDetailModal = ({
   consumableStock = 0,
   onRefillConsumable,
   onUseConsumable,
+  onBuyConsumableCoins,
+  onBuyConsumableGems,
   onClose
 }) => {
   var _a;
@@ -17240,39 +17540,77 @@ const ItemDetailModal = ({
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-700 leading-relaxed", children: consumable.usageGuide })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 pt-1", children: [
-                consumableStock > 0 && onUseConsumable && /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: () => {
-                      onClose();
-                      onUseConsumable();
-                    },
-                    className: "flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs shadow-sm active:scale-95 transition cursor-pointer",
-                    children: "Use Charge"
-                  }
-                ),
-                canRefill && onRefillConsumable ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "button",
-                  {
-                    onClick: () => {
-                      onClose();
-                      onRefillConsumable();
-                    },
-                    className: "flex-[1.3] py-2.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer",
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Refill +1 · Watch Ad" })
-                    ]
-                  }
-                ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-                  "button",
-                  {
-                    onClick: onClose,
-                    className: "flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition cursor-pointer",
-                    children: canRefill ? "Close" : "Full Capacity"
-                  }
-                )
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 pt-1", children: [
+                canRefill && (onBuyConsumableCoins || onBuyConsumableGems) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [
+                  onBuyConsumableCoins && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => {
+                        onClose();
+                        onBuyConsumableCoins();
+                      },
+                      className: "py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition tabular-nums",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-3.5 h-3.5 text-amber-600" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                          "Buy · ",
+                          consumable.coinPrice
+                        ] })
+                      ]
+                    }
+                  ),
+                  onBuyConsumableGems && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => {
+                        onClose();
+                        onBuyConsumableGems();
+                      },
+                      className: "py-2.5 px-3 rounded-xl bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 text-cyan-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition tabular-nums",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(Gem, { className: "w-3.5 h-3.5 text-cyan-600" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                          "Buy · ",
+                          consumable.gemPrice
+                        ] })
+                      ]
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  consumableStock > 0 && onUseConsumable && /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      onClick: () => {
+                        onClose();
+                        onUseConsumable();
+                      },
+                      className: "flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs shadow-sm active:scale-95 transition cursor-pointer",
+                      children: "Use Charge"
+                    }
+                  ),
+                  canRefill && onRefillConsumable ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => {
+                        onClose();
+                        onRefillConsumable();
+                      },
+                      className: "flex-[1.3] py-2.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Free +1 · Watch Ad" })
+                      ]
+                    }
+                  ) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "button",
+                    {
+                      onClick: onClose,
+                      className: "flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition cursor-pointer",
+                      children: canRefill ? "Close" : "Full Capacity"
+                    }
+                  )
+                ] })
               ] })
             ]
           }
@@ -17575,6 +17913,10 @@ const BOARD_THEME_FRAMES = {
   ocean: {
     shell: "border-sky-200/90 bg-white/95",
     tray: "bg-gradient-to-b from-sky-100/75 to-cyan-100/70 border-sky-200/90"
+  },
+  obsidian: {
+    shell: "border-amber-400/90 bg-slate-900 text-white",
+    tray: "bg-gradient-to-b from-slate-800 to-slate-950 border-amber-400/70"
   }
 };
 const FactoryBoard = ({
@@ -17584,7 +17926,7 @@ const FactoryBoard = ({
   onTriggerRewardedAd,
   onGoToMarket
 }) => {
-  var _a, _b, _c, _d, _e, _f, _g, _h;
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i;
   const [selectedCellIndex, setSelectedCellIndex] = reactExports.useState(null);
   const [flashCellIndex, setFlashCellIndex] = reactExports.useState(null);
   const [flashKind, setFlashKind] = reactExports.useState(null);
@@ -17657,7 +17999,7 @@ const FactoryBoard = ({
       const fy = clientY ?? window.innerHeight * 0.44;
       onAddFloatingText(`T${result.mergedItem.tier}! +${result.coinReward}`, fx, fy, "#059669");
       if (result.mergedItem.tier >= 5) {
-        confetti({ particleCount: 38, spread: 52, origin: { y: 0.55 } });
+        triggerConfetti({ particleCount: 38, spread: 52, origin: { y: 0.55 } });
       }
       showNotice(`${result.message} +${result.coinReward} Coins`, "success");
     },
@@ -17902,8 +18244,9 @@ const FactoryBoard = ({
     soundManager.playSound("click", state.settings.soundFx);
     setPendingOrder(order);
   };
+  const vipMultiplier = getContractPayoutMultiplier(state);
   const executeOrderFulfillment = (order, earningsMultiplier) => {
-    const totalCoinsEarned = Math.round(order.coinReward) * earningsMultiplier;
+    const totalCoinsEarned = Math.round(order.coinReward * vipMultiplier) * earningsMultiplier;
     const gemsEarned = (order.gemReward || 0) * earningsMultiplier;
     const willLevelUp = state.xp + order.xpReward >= state.xpToNextLevel;
     onUpdateState((prev) => {
@@ -17932,11 +18275,12 @@ const FactoryBoard = ({
           });
         }
       });
-      const orderCoins = Math.round(targetOrder.coinReward) * earningsMultiplier;
+      const prevVipMult = getContractPayoutMultiplier(prev);
+      const orderCoins = Math.round(targetOrder.coinReward * prevVipMult) * earningsMultiplier;
       const orderXp = targetOrder.xpReward;
       const orderGems = (targetOrder.gemReward || 0) * earningsMultiplier;
       const newOrders = prev.orders.map(
-        (o) => o.id === targetOrder.id ? generateRandomOrder(`ord_${Date.now()}`, prev.level) : o
+        (o) => o.id === targetOrder.id ? generateRandomOrder(`ord_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, prev.level) : o
       );
       const nextXP = prev.xp + orderXp;
       let nextLevel = prev.level;
@@ -17975,7 +18319,7 @@ const FactoryBoard = ({
     if (willLevelUp) {
       soundManager.playSound("upgrade", state.settings.soundFx);
     }
-    confetti({ particleCount: 55, spread: 60, origin: { y: 0.6 } });
+    triggerConfetti({ particleCount: 55, spread: 60, origin: { y: 0.6 } });
     onAddFloatingText(
       `+${totalCoinsEarned.toLocaleString()} Coins${gemsEarned ? ` +${gemsEarned} 💎` : ""}`,
       window.innerWidth / 2,
@@ -18151,7 +18495,7 @@ const FactoryBoard = ({
     });
     setSelectedCellIndex(null);
     soundManager.playSound("upgrade", state.settings.soundFx);
-    confetti({ particleCount: 28, spread: 45, origin: { y: 0.55 } });
+    triggerConfetti({ particleCount: 28, spread: 45, origin: { y: 0.55 } });
     showNotice(`Activated ${special.label}!`, "success");
   };
   const handleUseConsumable = (id) => {
@@ -18167,7 +18511,7 @@ const FactoryBoard = ({
     }
     soundManager.playSound("upgrade", state.settings.soundFx);
     if (preview.triggerConfetti) {
-      confetti({ particleCount: 36, spread: 50, origin: { y: 0.58 } });
+      triggerConfetti({ particleCount: 36, spread: 50, origin: { y: 0.58 } });
     }
     if (preview.floatingText) {
       onAddFloatingText(
@@ -18320,7 +18664,13 @@ const FactoryBoard = ({
         children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 min-w-0", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-sm font-black tracking-tight text-slate-900", children: "Merge Table" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "h2",
+                {
+                  className: `text-sm font-black tracking-tight ${((_g = state.settings) == null ? void 0 : _g.boardTheme) === "obsidian" ? "text-amber-200" : "text-slate-900"}`,
+                  children: "Merge Table"
+                }
+              ),
               /* @__PURE__ */ jsxRuntimeExports.jsx(
                 "span",
                 {
@@ -18584,7 +18934,7 @@ const FactoryBoard = ({
                 children: state.energy > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 fill-current" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Source Material (-1 ⚡)" })
-                ] }) : (((_g = state.consumables) == null ? void 0 : _g.energy_cell) || 0) > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                ] }) : (((_h = state.consumables) == null ? void 0 : _h.energy_cell) || 0) > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { className: "w-4 h-4 fill-current" }),
                   /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Use Quick Charge (+15 ⚡)" })
                 ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
@@ -18725,7 +19075,10 @@ const FactoryBoard = ({
     pendingOrder && /* @__PURE__ */ jsxRuntimeExports.jsx(
       OrderRewardModal,
       {
-        order: pendingOrder,
+        order: {
+          ...pendingOrder,
+          coinReward: Math.round(pendingOrder.coinReward * vipMultiplier)
+        },
         onClaimNormal: () => {
           const target = pendingOrder;
           setPendingOrder(null);
@@ -18744,7 +19097,7 @@ const FactoryBoard = ({
       ItemDetailModal,
       {
         consumable: inspectedConsumable,
-        consumableStock: ((_h = state.consumables) == null ? void 0 : _h[inspectedConsumable.id]) || 0,
+        consumableStock: ((_i = state.consumables) == null ? void 0 : _i[inspectedConsumable.id]) || 0,
         onUseConsumable: () => handleUseConsumable(inspectedConsumable.id),
         onRefillConsumable: () => handleRefillConsumableAd(inspectedConsumable.id),
         onClose: () => setInspectedConsumable(null)
@@ -18752,6 +19105,361 @@ const FactoryBoard = ({
     )
   ] });
 };
+var NativeAdTemplate;
+(function(NativeAdTemplate2) {
+  NativeAdTemplate2["Small"] = "small";
+  NativeAdTemplate2["Medium"] = "medium";
+})(NativeAdTemplate || (NativeAdTemplate = {}));
+var MaxAdContentRating;
+(function(MaxAdContentRating2) {
+  MaxAdContentRating2["General"] = "General";
+  MaxAdContentRating2["ParentalGuidance"] = "ParentalGuidance";
+  MaxAdContentRating2["Teen"] = "Teen";
+  MaxAdContentRating2["MatureAudience"] = "MatureAudience";
+})(MaxAdContentRating || (MaxAdContentRating = {}));
+var BannerAdPluginEvents;
+(function(BannerAdPluginEvents2) {
+  BannerAdPluginEvents2["SizeChanged"] = "bannerAdSizeChanged";
+  BannerAdPluginEvents2["Loaded"] = "bannerAdLoaded";
+  BannerAdPluginEvents2["FailedToLoad"] = "bannerAdFailedToLoad";
+  BannerAdPluginEvents2["Opened"] = "bannerAdOpened";
+  BannerAdPluginEvents2["Closed"] = "bannerAdClosed";
+  BannerAdPluginEvents2["AdImpression"] = "bannerAdImpression";
+  BannerAdPluginEvents2["AdPaid"] = "bannerAdPaid";
+})(BannerAdPluginEvents || (BannerAdPluginEvents = {}));
+var BannerAdPosition;
+(function(BannerAdPosition2) {
+  BannerAdPosition2["TOP_CENTER"] = "TOP_CENTER";
+  BannerAdPosition2["CENTER"] = "CENTER";
+  BannerAdPosition2["BOTTOM_CENTER"] = "BOTTOM_CENTER";
+})(BannerAdPosition || (BannerAdPosition = {}));
+var BannerAdSize;
+(function(BannerAdSize2) {
+  BannerAdSize2["BANNER"] = "BANNER";
+  BannerAdSize2["FULL_BANNER"] = "FULL_BANNER";
+  BannerAdSize2["LARGE_BANNER"] = "LARGE_BANNER";
+  BannerAdSize2["MEDIUM_RECTANGLE"] = "MEDIUM_RECTANGLE";
+  BannerAdSize2["LEADERBOARD"] = "LEADERBOARD";
+  BannerAdSize2["ADAPTIVE_BANNER"] = "ADAPTIVE_BANNER";
+  BannerAdSize2["SMART_BANNER"] = "SMART_BANNER";
+})(BannerAdSize || (BannerAdSize = {}));
+var InterstitialAdPluginEvents;
+(function(InterstitialAdPluginEvents2) {
+  InterstitialAdPluginEvents2["Loaded"] = "interstitialAdLoaded";
+  InterstitialAdPluginEvents2["FailedToLoad"] = "interstitialAdFailedToLoad";
+  InterstitialAdPluginEvents2["Showed"] = "interstitialAdShowed";
+  InterstitialAdPluginEvents2["FailedToShow"] = "interstitialAdFailedToShow";
+  InterstitialAdPluginEvents2["Dismissed"] = "interstitialAdDismissed";
+  InterstitialAdPluginEvents2["AdImpression"] = "interstitialAdImpression";
+})(InterstitialAdPluginEvents || (InterstitialAdPluginEvents = {}));
+var RewardInterstitialAdPluginEvents;
+(function(RewardInterstitialAdPluginEvents2) {
+  RewardInterstitialAdPluginEvents2["Loaded"] = "onRewardedInterstitialAdLoaded";
+  RewardInterstitialAdPluginEvents2["FailedToLoad"] = "onRewardedInterstitialAdFailedToLoad";
+  RewardInterstitialAdPluginEvents2["Showed"] = "onRewardedInterstitialAdShowed";
+  RewardInterstitialAdPluginEvents2["FailedToShow"] = "onRewardedInterstitialAdFailedToShow";
+  RewardInterstitialAdPluginEvents2["Dismissed"] = "onRewardedInterstitialAdDismissed";
+  RewardInterstitialAdPluginEvents2["Rewarded"] = "onRewardedInterstitialAdReward";
+  RewardInterstitialAdPluginEvents2["AdImpression"] = "onRewardedInterstitialAdImpression";
+})(RewardInterstitialAdPluginEvents || (RewardInterstitialAdPluginEvents = {}));
+var RewardAdPluginEvents;
+(function(RewardAdPluginEvents2) {
+  RewardAdPluginEvents2["adClicked"] = "onRewardedVideoAdClicked";
+  RewardAdPluginEvents2["Loaded"] = "onRewardedVideoAdLoaded";
+  RewardAdPluginEvents2["FailedToLoad"] = "onRewardedVideoAdFailedToLoad";
+  RewardAdPluginEvents2["Showed"] = "onRewardedVideoAdShowed";
+  RewardAdPluginEvents2["FailedToShow"] = "onRewardedVideoAdFailedToShow";
+  RewardAdPluginEvents2["Dismissed"] = "onRewardedVideoAdDismissed";
+  RewardAdPluginEvents2["Rewarded"] = "onRewardedVideoAdReward";
+  RewardAdPluginEvents2["AdImpression"] = "onRewardedVideoAdImpression";
+})(RewardAdPluginEvents || (RewardAdPluginEvents = {}));
+var AdmobConsentStatus;
+(function(AdmobConsentStatus2) {
+  AdmobConsentStatus2["NOT_REQUIRED"] = "NOT_REQUIRED";
+  AdmobConsentStatus2["OBTAINED"] = "OBTAINED";
+  AdmobConsentStatus2["REQUIRED"] = "REQUIRED";
+  AdmobConsentStatus2["UNKNOWN"] = "UNKNOWN";
+})(AdmobConsentStatus || (AdmobConsentStatus = {}));
+var AdmobConsentDebugGeography;
+(function(AdmobConsentDebugGeography2) {
+  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["DISABLED"] = 0] = "DISABLED";
+  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["EEA"] = 1] = "EEA";
+  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["NOT_EEA"] = 2] = "NOT_EEA";
+  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["US"] = 3] = "US";
+  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["OTHER"] = 4] = "OTHER";
+})(AdmobConsentDebugGeography || (AdmobConsentDebugGeography = {}));
+var AdValuePrecision;
+(function(AdValuePrecision2) {
+  AdValuePrecision2[AdValuePrecision2["Unknown"] = 0] = "Unknown";
+  AdValuePrecision2[AdValuePrecision2["Estimated"] = 1] = "Estimated";
+  AdValuePrecision2[AdValuePrecision2["PublisherProvided"] = 2] = "PublisherProvided";
+  AdValuePrecision2[AdValuePrecision2["Precise"] = 3] = "Precise";
+})(AdValuePrecision || (AdValuePrecision = {}));
+var AppOpenAdPluginEvents;
+(function(AppOpenAdPluginEvents2) {
+  AppOpenAdPluginEvents2["Loaded"] = "appOpenAdLoaded";
+  AppOpenAdPluginEvents2["FailedToLoad"] = "appOpenAdFailedToLoad";
+  AppOpenAdPluginEvents2["Opened"] = "appOpenAdOpened";
+  AppOpenAdPluginEvents2["Closed"] = "appOpenAdClosed";
+  AppOpenAdPluginEvents2["FailedToShow"] = "appOpenAdFailedToShow";
+  AppOpenAdPluginEvents2["AdImpression"] = "appOpenAdImpression";
+})(AppOpenAdPluginEvents || (AppOpenAdPluginEvents = {}));
+var NativeAdPluginEvents;
+(function(NativeAdPluginEvents2) {
+  NativeAdPluginEvents2["Loaded"] = "nativeAdLoaded";
+  NativeAdPluginEvents2["FailedToLoad"] = "nativeAdFailedToLoad";
+  NativeAdPluginEvents2["Clicked"] = "nativeAdClicked";
+  NativeAdPluginEvents2["AdImpression"] = "nativeAdImpression";
+  NativeAdPluginEvents2["Opened"] = "nativeAdOpened";
+  NativeAdPluginEvents2["Closed"] = "nativeAdClosed";
+  NativeAdPluginEvents2["AdPaid"] = "nativeAdPaid";
+})(NativeAdPluginEvents || (NativeAdPluginEvents = {}));
+const nativeAdBridge = registerPlugin("AdMob", {
+  web: () => __vitePreload(() => import("./web-Con2TEBf.js"), true ? [] : void 0).then((m) => new m.AdMobWeb())
+});
+const AdMob = nativeAdBridge;
+const ADMOB_CONFIG = {
+  appId: "ca-app-pub-7953133690157762~2151559499",
+  rewardedAdUnitId: "ca-app-pub-7953133690157762/9569517536",
+  interstitialAdUnitId: "ca-app-pub-7953133690157762/5330889623"
+};
+const IS_TEST_MODE = false;
+const PREPARE_TIMEOUT_MS = 8e3;
+const INTERSTITIAL_CLOSE_TIMEOUT_MS = 1e4;
+let initPromise = null;
+let rewardedLoadPromise = null;
+let interstitialLoadPromise = null;
+let preparedRewardedUnitId = null;
+let preparedInterstitialUnitId = null;
+function withTimeout(promise, ms, timeoutMessage) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(timeoutMessage));
+    }, ms);
+    promise.then(
+      (val) => {
+        clearTimeout(timer);
+        resolve(val);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
+function isNativeAdMob() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+function isInterstitialReady() {
+  if (!isNativeAdMob()) return false;
+  return Boolean(preparedInterstitialUnitId);
+}
+async function initAdMob() {
+  if (!isNativeAdMob()) return;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      await withTimeout(
+        AdMob.initialize({
+          initializeForTesting: IS_TEST_MODE
+        }),
+        6e3,
+        "AdMob initialization timed out"
+      );
+      try {
+        const consentInfo = await Promise.race([
+          AdMob.requestConsentInfo(),
+          new Promise((resolve) => setTimeout(() => resolve(null), 2500))
+        ]);
+        if (consentInfo && consentInfo.isConsentFormAvailable && consentInfo.status === AdmobConsentStatus.REQUIRED) {
+          await withTimeout(AdMob.showConsentForm(), 8e3, "Consent form timed out").catch(() => {
+          });
+        }
+      } catch (consentErr) {
+        console.warn("AdMob UMP consent check skipped:", consentErr);
+      }
+      void preloadRewardedAd();
+      void preloadInterstitialAd();
+    } catch (err) {
+      initPromise = null;
+      console.warn("AdMob initialization error:", err);
+    }
+  })();
+  return initPromise;
+}
+let lastRewardedLoadError = null;
+async function preloadRewardedAd() {
+  if (!isNativeAdMob()) return null;
+  if (preparedRewardedUnitId) return preparedRewardedUnitId;
+  if (rewardedLoadPromise) return rewardedLoadPromise;
+  rewardedLoadPromise = (async () => {
+    try {
+      await initAdMob();
+      const info = await withTimeout(
+        AdMob.prepareRewardVideoAd({
+          adId: ADMOB_CONFIG.rewardedAdUnitId,
+          isTesting: IS_TEST_MODE,
+          immersiveMode: true
+        }),
+        PREPARE_TIMEOUT_MS,
+        "AdMob took too long to respond. Please check your connection and try again."
+      );
+      preparedRewardedUnitId = (info == null ? void 0 : info.adUnitId) || ADMOB_CONFIG.rewardedAdUnitId;
+      lastRewardedLoadError = null;
+      return preparedRewardedUnitId;
+    } catch (err) {
+      preparedRewardedUnitId = null;
+      const errObj = err;
+      lastRewardedLoadError = (errObj == null ? void 0 : errObj.message) || "Unable to load ad from AdMob.";
+      console.warn("Rewarded ad preload failed:", err);
+      return null;
+    } finally {
+      rewardedLoadPromise = null;
+    }
+  })();
+  return rewardedLoadPromise;
+}
+async function preloadInterstitialAd() {
+  if (!isNativeAdMob()) return null;
+  if (preparedInterstitialUnitId) return preparedInterstitialUnitId;
+  if (interstitialLoadPromise) return interstitialLoadPromise;
+  interstitialLoadPromise = (async () => {
+    try {
+      await initAdMob();
+      const info = await withTimeout(
+        AdMob.prepareInterstitial({
+          adId: ADMOB_CONFIG.interstitialAdUnitId,
+          isTesting: IS_TEST_MODE,
+          immersiveMode: true
+        }),
+        PREPARE_TIMEOUT_MS,
+        "Interstitial preload timed out"
+      );
+      preparedInterstitialUnitId = (info == null ? void 0 : info.adUnitId) || ADMOB_CONFIG.interstitialAdUnitId;
+      return preparedInterstitialUnitId;
+    } catch (err) {
+      preparedInterstitialUnitId = null;
+      console.warn("Interstitial ad preload failed:", err);
+      return null;
+    } finally {
+      interstitialLoadPromise = null;
+    }
+  })();
+  return interstitialLoadPromise;
+}
+async function showNativeRewardedAd() {
+  if (!isNativeAdMob()) {
+    return { completed: false, error: "Not running in native Android app" };
+  }
+  await initAdMob();
+  let unitIdToShow = preparedRewardedUnitId;
+  if (!unitIdToShow) {
+    unitIdToShow = await preloadRewardedAd();
+    if (!unitIdToShow) {
+      return {
+        completed: false,
+        error: lastRewardedLoadError || "Ad could not be loaded yet. Check your internet connection and tap Try Again."
+      };
+    }
+  }
+  preparedRewardedUnitId = null;
+  let dismissedHandle = null;
+  let failedHandle = null;
+  let dismissedPromiseResolve = null;
+  const dismissedPromise = new Promise((resolve) => {
+    dismissedPromiseResolve = resolve;
+  });
+  try {
+    dismissedHandle = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+      dismissedPromiseResolve == null ? void 0 : dismissedPromiseResolve();
+    });
+    failedHandle = await AdMob.addListener(RewardAdPluginEvents.FailedToShow, () => {
+      dismissedPromiseResolve == null ? void 0 : dismissedPromiseResolve();
+    });
+    await AdMob.showRewardVideoAd({
+      adId: unitIdToShow
+    });
+    await Promise.race([
+      dismissedPromise,
+      new Promise((resolve) => setTimeout(resolve, 600))
+    ]);
+    void preloadRewardedAd();
+    return { completed: true };
+  } catch (err) {
+    const errObj = err;
+    const isCancelled = (errObj == null ? void 0 : errObj.code) === "REWARDED_AD_CANCELLED" || typeof (errObj == null ? void 0 : errObj.message) === "string" && errObj.message.toLowerCase().includes("dismissed");
+    void preloadRewardedAd();
+    if (isCancelled) {
+      return {
+        completed: false,
+        cancelled: true,
+        error: "Watch the full ad to claim your reward."
+      };
+    }
+    return {
+      completed: false,
+      error: (errObj == null ? void 0 : errObj.message) || "Unable to show ad right now. Please try again."
+    };
+  } finally {
+    await (dismissedHandle == null ? void 0 : dismissedHandle.remove().catch(() => {
+    }));
+    await (failedHandle == null ? void 0 : failedHandle.remove().catch(() => {
+    }));
+  }
+}
+async function showNativeInterstitialAd() {
+  if (!isNativeAdMob()) {
+    return { completed: true };
+  }
+  const unitIdToShow = preparedInterstitialUnitId;
+  if (!unitIdToShow) {
+    void preloadInterstitialAd();
+    return { completed: true };
+  }
+  preparedInterstitialUnitId = null;
+  let dismissedHandle = null;
+  let failedHandle = null;
+  let timer = null;
+  const waitForClose = new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve();
+    };
+    void AdMob.addListener(InterstitialAdPluginEvents.Dismissed, finish).then((h) => {
+      dismissedHandle = h;
+    });
+    void AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, finish).then((h) => {
+      failedHandle = h;
+    });
+    timer = setTimeout(finish, INTERSTITIAL_CLOSE_TIMEOUT_MS);
+  });
+  try {
+    await AdMob.showInterstitial({
+      adId: unitIdToShow
+    });
+    await waitForClose;
+    void preloadInterstitialAd();
+    return { completed: true };
+  } catch (err) {
+    console.warn("Interstitial show skipped:", err);
+    void preloadInterstitialAd();
+    return { completed: true };
+  } finally {
+    if (timer) clearTimeout(timer);
+    await (dismissedHandle == null ? void 0 : dismissedHandle.remove().catch(() => {
+    }));
+    await (failedHandle == null ? void 0 : failedHandle.remove().catch(() => {
+    }));
+  }
+}
 const AchievementsView = ({
   state,
   onUpdateState,
@@ -18770,7 +19478,7 @@ const AchievementsView = ({
     const ach = state.achievements.find((a) => a.id === achievementId);
     if (!ach || ach.claimed || ach.currentValue < ach.targetValue) return;
     soundManager.playSound("upgrade", state.settings.soundFx);
-    confetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
+    triggerConfetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
     onUpdateState((prev) => {
       const nextAchievements = prev.achievements.map((a) => a.id === achievementId ? { ...a, claimed: true } : a);
       return {
@@ -18934,6 +19642,28 @@ const OrdersView = ({
   const unclaimedMilestonesCount = state.achievements.filter(
     (a) => !a.claimed && a.currentValue >= a.targetValue
   ).length;
+  const vipMultiplier = getContractPayoutMultiplier(state);
+  const getContractCoinReward = (order) => Math.round(Math.max(10, order.coinReward) * vipMultiplier);
+  const REFRESH_CONTRACT_COST = 100;
+  const handleRefreshContract = (orderId) => {
+    if (state.coins < REFRESH_CONTRACT_COST) {
+      soundManager.playSound("error", state.settings.soundFx);
+      showError(`Needs ${REFRESH_CONTRACT_COST} Coins to refresh this contract.`);
+      return;
+    }
+    onUpdateState((prev) => {
+      if (prev.coins < REFRESH_CONTRACT_COST) return prev;
+      return {
+        ...prev,
+        coins: prev.coins - REFRESH_CONTRACT_COST,
+        orders: prev.orders.map(
+          (o) => o.id === orderId ? generateRandomOrder(`ord_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, prev.level) : o
+        )
+      };
+    });
+    soundManager.playSound("click", state.settings.soundFx);
+    onAddFloatingText("-100 Coins · New Contract", window.innerWidth / 2, window.innerHeight * 0.45, "#0284C7");
+  };
   const handleFulfillOrder = (orderId, earningsMultiplier = 1) => {
     const order = state.orders.find((o) => o.id === orderId);
     if (!order) return;
@@ -18943,14 +19673,25 @@ const OrdersView = ({
       return;
     }
     const fulfillAction = () => {
-      const baseCoins = Math.round(order.coinReward);
-      const totalCoinsEarned = baseCoins * earningsMultiplier;
-      const totalGemsEarned = (order.gemReward || 0) * earningsMultiplier;
-      const willLevelUp = state.xp + order.xpReward >= state.xpToNextLevel;
+      let didFulfill = false;
+      let shippedCoins = getContractCoinReward(order) * earningsMultiplier;
+      let shippedGems = (order.gemReward || 0) * earningsMultiplier;
+      let leveledUp = false;
       onUpdateState((prev) => {
         const targetOrder = prev.orders.find((o) => o.id === orderId);
         if (!targetOrder) return prev;
         const reqs = getOrderRequirements(targetOrder);
+        const canStillFulfill = reqs.every((req) => {
+          const reqCat = req.category || "wood";
+          const bCount = prev.board.filter(
+            (c) => c.item && c.item.tier === req.itemTier && (c.item.category || "wood") === reqCat
+          ).length;
+          const iCount = prev.inventory.filter(
+            (i) => i.tier === req.itemTier && (i.category || "wood") === reqCat
+          ).length;
+          return bCount + iCount >= req.quantity;
+        });
+        if (!canStillFulfill) return prev;
         let nextBoard = [...prev.board];
         let nextInventory = [...prev.inventory];
         reqs.forEach((req) => {
@@ -18973,11 +19714,14 @@ const OrdersView = ({
             });
           }
         });
-        const orderCoins = Math.round(targetOrder.coinReward) * earningsMultiplier;
+        const prevVipMult = getContractPayoutMultiplier(prev);
+        const orderCoins = Math.round(Math.max(10, targetOrder.coinReward) * prevVipMult) * earningsMultiplier;
         const orderXp = targetOrder.xpReward;
         const orderGems = (targetOrder.gemReward || 0) * earningsMultiplier;
+        shippedCoins = orderCoins;
+        shippedGems = orderGems;
         const newOrders = prev.orders.map(
-          (o) => o.id === orderId ? generateRandomOrder(`ord_${Date.now()}`, prev.level) : o
+          (o) => o.id === orderId ? generateRandomOrder(`ord_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, prev.level) : o
         );
         const nextXP = prev.xp + orderXp;
         let nextLevel = prev.level;
@@ -18985,6 +19729,7 @@ const OrdersView = ({
         if (nextXP >= nextXPToNext) {
           nextLevel += 1;
           nextXPToNext = Math.round(nextXPToNext * 1.55);
+          leveledUp = true;
         }
         const totalOrders = prev.stats.totalOrdersCompleted + 1;
         const updatedAchievements = prev.achievements.map((ach) => {
@@ -18995,6 +19740,7 @@ const OrdersView = ({
         });
         let nextDaily = recordDailyMissionProgress(prev.dailyState, "orders", 1);
         nextDaily = recordDailyMissionProgress(nextDaily, "earn_coins", orderCoins);
+        didFulfill = true;
         return {
           ...prev,
           coins: prev.coins + orderCoins,
@@ -19014,10 +19760,14 @@ const OrdersView = ({
           }
         };
       });
-      soundManager.playSound(willLevelUp || earningsMultiplier === 2 ? "upgrade" : "order", state.settings.soundFx);
-      confetti({ particleCount: earningsMultiplier === 2 ? 75 : 45, spread: 70, origin: { y: 0.5 } });
+      if (!didFulfill) {
+        soundManager.playSound(earningsMultiplier === 2 ? "upgrade" : "order", state.settings.soundFx);
+      } else {
+        soundManager.playSound(leveledUp || earningsMultiplier === 2 ? "upgrade" : "order", state.settings.soundFx);
+      }
+      triggerConfetti({ particleCount: earningsMultiplier === 2 ? 75 : 45, spread: 70, origin: { y: 0.5 } });
       onAddFloatingText(
-        earningsMultiplier === 2 ? `2x · +${totalCoinsEarned.toLocaleString()} Coins${totalGemsEarned > 0 ? ` +${totalGemsEarned} Gems` : ""}` : `+${totalCoinsEarned.toLocaleString()} Coins${totalGemsEarned > 0 ? ` +${totalGemsEarned} Gems` : ""}`,
+        earningsMultiplier === 2 ? `2x · +${shippedCoins.toLocaleString()} Coins${shippedGems > 0 ? ` +${shippedGems} Gems` : ""}` : `+${shippedCoins.toLocaleString()} Coins${shippedGems > 0 ? ` +${shippedGems} Gems` : ""}`,
         window.innerWidth / 2,
         window.innerHeight / 2,
         "#D97706"
@@ -19025,10 +19775,14 @@ const OrdersView = ({
     };
     if (earningsMultiplier === 2) {
       onTriggerRewardedAd("double_earnings", fulfillAction);
-    } else if (state.stats.totalOrdersCompleted > 0 && state.stats.totalOrdersCompleted % 3 === 0) {
-      onTriggerInterstitialAd(fulfillAction);
     } else {
       fulfillAction();
+      const nextCount = state.stats.totalOrdersCompleted + 1;
+      if (nextCount > 0 && nextCount % 4 === 0 && isInterstitialReady()) {
+        setTimeout(() => {
+          void showNativeInterstitialAd();
+        }, 350);
+      }
     }
   };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3 max-w-md mx-auto p-3 select-none text-slate-900 pb-6", children: [
@@ -19119,7 +19873,7 @@ const OrdersView = ({
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-3", children: state.orders.map((order) => {
         const reqs = getOrderRequirements(order);
         const ready = isOrderReady(order);
-        const baseCoins = Math.round(order.coinReward);
+        const baseCoins = getContractCoinReward(order);
         const baseGems = order.gemReward || 0;
         return /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
@@ -19137,7 +19891,7 @@ const OrdersView = ({
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] text-slate-500 font-medium", children: [
                       order.badge || "Standard Contract",
                       " · #",
-                      order.id.substring(order.id.length - 4)
+                      String(order.id || "0000").slice(-4)
                     ] })
                   ] })
                 ] }),
@@ -19186,7 +19940,19 @@ const OrdersView = ({
                   );
                 }) })
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    onClick: () => handleRefreshContract(order.id),
+                    title: `Replace contract for ${REFRESH_CONTRACT_COST} Coins`,
+                    className: "py-2.5 px-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition shrink-0 tabular-nums",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: REFRESH_CONTRACT_COST })
+                    ]
+                  }
+                ),
                 /* @__PURE__ */ jsxRuntimeExports.jsxs(
                   "button",
                   {
@@ -19195,7 +19961,7 @@ const OrdersView = ({
                     className: `flex-1 py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95 ${ready ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm cursor-pointer" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"}`,
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "w-3.5 h-3.5 shrink-0" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Deliver 1x" })
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Deliver" })
                     ]
                   }
                 ),
@@ -19204,11 +19970,11 @@ const OrdersView = ({
                   {
                     onClick: () => handleFulfillOrder(order.id, 2),
                     disabled: !ready,
-                    className: `flex-[1.35] py-2.5 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 tabular-nums ${ready ? "bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm cursor-pointer" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"}`,
+                    className: `flex-[1.3] py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95 tabular-nums ${ready ? "bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm cursor-pointer" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"}`,
                     children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
-                        "Watch Ad · 2x (+",
+                        "2x Ad (+",
                         baseCoins * 2,
                         ")"
                       ] })
@@ -19230,6 +19996,7 @@ const MachinesView = ({
   onTriggerRewardedAd,
   onAddFloatingText
 }) => {
+  var _a, _b;
   const [errorMsg, setErrorMsg] = reactExports.useState(null);
   const [now, setNow] = reactExports.useState(() => Date.now());
   const boostRemainingMs = Math.max(0, (state.doubleEarningsUntil || 0) - now);
@@ -19260,7 +20027,7 @@ const MachinesView = ({
         doubleEarningsUntil: nextUntil
       }));
       soundManager.playSound("upgrade", state.settings.soundFx);
-      confetti({ particleCount: 55, spread: 70, origin: { y: 0.45 } });
+      triggerConfetti({ particleCount: 55, spread: 70, origin: { y: 0.45 } });
       if (onAddFloatingText) {
         onAddFloatingText("2x Machine Output Active", window.innerWidth / 2, window.innerHeight / 2, "#D97706");
       }
@@ -19270,6 +20037,8 @@ const MachinesView = ({
     setErrorMsg(msg);
     setTimeout(() => setErrorMsg(null), 2500);
   };
+  const turbineLevel = ((_a = state.premiumPerks) == null ? void 0 : _a.goldenTurbineLevel) || 0;
+  const hasTurbineCharter = Boolean((_b = state.ownedIapIds) == null ? void 0 : _b.includes(IAP_SKU_GOLDEN_TURBINE));
   const computeTotalIncomePerSec = () => {
     let coinsPerSec = 0;
     state.machines.forEach((machine) => {
@@ -19282,7 +20051,7 @@ const MachinesView = ({
         coinsPerSec += machineRate;
       }
     });
-    coinsPerSec *= 1 + (state.factoryLevel - 1) * 0.15;
+    coinsPerSec *= getPlantIncomeMultiplier(state);
     if (isSurgeActive) coinsPerSec *= 1.5;
     if (isBoostActive) coinsPerSec *= 2;
     return coinsPerSec.toFixed(2);
@@ -19376,6 +20145,12 @@ const MachinesView = ({
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 text-[11px] text-slate-600 flex-wrap font-medium", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Plant Output" }),
+            turbineLevel > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-amber-700 font-bold", children: [
+              "· +",
+              turbineLevel * 25,
+              "% Turbine"
+            ] }),
+            hasTurbineCharter && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-violet-700 font-bold", children: "· 2x Charter" }),
             isBoostActive && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-amber-700 font-bold", children: "· 2x Ad" }),
             isSurgeActive && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sky-700 font-bold", children: "· +50% Tooling" })
           ] }),
@@ -19918,6 +20693,260 @@ const MarketplacePanel = ({
     }) })
   ] });
 };
+var ATTRIBUTION_NETWORK;
+(function(ATTRIBUTION_NETWORK2) {
+  ATTRIBUTION_NETWORK2[ATTRIBUTION_NETWORK2["APPLE_SEARCH_ADS"] = 0] = "APPLE_SEARCH_ADS";
+  ATTRIBUTION_NETWORK2[ATTRIBUTION_NETWORK2["ADJUST"] = 1] = "ADJUST";
+  ATTRIBUTION_NETWORK2[ATTRIBUTION_NETWORK2["APPSFLYER"] = 2] = "APPSFLYER";
+  ATTRIBUTION_NETWORK2[ATTRIBUTION_NETWORK2["BRANCH"] = 3] = "BRANCH";
+  ATTRIBUTION_NETWORK2[ATTRIBUTION_NETWORK2["TENJIN"] = 4] = "TENJIN";
+  ATTRIBUTION_NETWORK2[ATTRIBUTION_NETWORK2["FACEBOOK"] = 5] = "FACEBOOK";
+})(ATTRIBUTION_NETWORK || (ATTRIBUTION_NETWORK = {}));
+var PURCHASE_TYPE;
+(function(PURCHASE_TYPE2) {
+  PURCHASE_TYPE2["INAPP"] = "inapp";
+  PURCHASE_TYPE2["SUBS"] = "subs";
+})(PURCHASE_TYPE || (PURCHASE_TYPE = {}));
+var BILLING_FEATURE;
+(function(BILLING_FEATURE2) {
+  BILLING_FEATURE2[BILLING_FEATURE2["SUBSCRIPTIONS"] = 0] = "SUBSCRIPTIONS";
+  BILLING_FEATURE2[BILLING_FEATURE2["SUBSCRIPTIONS_UPDATE"] = 1] = "SUBSCRIPTIONS_UPDATE";
+  BILLING_FEATURE2[BILLING_FEATURE2["IN_APP_ITEMS_ON_VR"] = 2] = "IN_APP_ITEMS_ON_VR";
+  BILLING_FEATURE2[BILLING_FEATURE2["SUBSCRIPTIONS_ON_VR"] = 3] = "SUBSCRIPTIONS_ON_VR";
+  BILLING_FEATURE2[BILLING_FEATURE2["PRICE_CHANGE_CONFIRMATION"] = 4] = "PRICE_CHANGE_CONFIRMATION";
+})(BILLING_FEATURE || (BILLING_FEATURE = {}));
+var PRORATION_MODE;
+(function(PRORATION_MODE2) {
+  PRORATION_MODE2[PRORATION_MODE2["UNKNOWN_SUBSCRIPTION_UPGRADE_DOWNGRADE_POLICY"] = 0] = "UNKNOWN_SUBSCRIPTION_UPGRADE_DOWNGRADE_POLICY";
+  PRORATION_MODE2[PRORATION_MODE2["IMMEDIATE_WITH_TIME_PRORATION"] = 1] = "IMMEDIATE_WITH_TIME_PRORATION";
+  PRORATION_MODE2[PRORATION_MODE2["IMMEDIATE_AND_CHARGE_PRORATED_PRICE"] = 2] = "IMMEDIATE_AND_CHARGE_PRORATED_PRICE";
+  PRORATION_MODE2[PRORATION_MODE2["IMMEDIATE_WITHOUT_PRORATION"] = 3] = "IMMEDIATE_WITHOUT_PRORATION";
+  PRORATION_MODE2[PRORATION_MODE2["DEFERRED"] = 4] = "DEFERRED";
+})(PRORATION_MODE || (PRORATION_MODE = {}));
+var PACKAGE_TYPE;
+(function(PACKAGE_TYPE2) {
+  PACKAGE_TYPE2["UNKNOWN"] = "UNKNOWN";
+  PACKAGE_TYPE2["CUSTOM"] = "CUSTOM";
+  PACKAGE_TYPE2["LIFETIME"] = "LIFETIME";
+  PACKAGE_TYPE2["ANNUAL"] = "ANNUAL";
+  PACKAGE_TYPE2["SIX_MONTH"] = "SIX_MONTH";
+  PACKAGE_TYPE2["THREE_MONTH"] = "THREE_MONTH";
+  PACKAGE_TYPE2["TWO_MONTH"] = "TWO_MONTH";
+  PACKAGE_TYPE2["MONTHLY"] = "MONTHLY";
+  PACKAGE_TYPE2["WEEKLY"] = "WEEKLY";
+})(PACKAGE_TYPE || (PACKAGE_TYPE = {}));
+var INTRO_ELIGIBILITY_STATUS;
+(function(INTRO_ELIGIBILITY_STATUS2) {
+  INTRO_ELIGIBILITY_STATUS2[INTRO_ELIGIBILITY_STATUS2["INTRO_ELIGIBILITY_STATUS_UNKNOWN"] = 0] = "INTRO_ELIGIBILITY_STATUS_UNKNOWN";
+  INTRO_ELIGIBILITY_STATUS2[INTRO_ELIGIBILITY_STATUS2["INTRO_ELIGIBILITY_STATUS_INELIGIBLE"] = 1] = "INTRO_ELIGIBILITY_STATUS_INELIGIBLE";
+  INTRO_ELIGIBILITY_STATUS2[INTRO_ELIGIBILITY_STATUS2["INTRO_ELIGIBILITY_STATUS_ELIGIBLE"] = 2] = "INTRO_ELIGIBILITY_STATUS_ELIGIBLE";
+})(INTRO_ELIGIBILITY_STATUS || (INTRO_ELIGIBILITY_STATUS = {}));
+const NativePurchases = registerPlugin("NativePurchases", {
+  web: () => __vitePreload(() => import("./web-j1SOh0ub.js"), true ? [] : void 0).then((m) => new m.NativePurchasesWeb())
+});
+const IAP_CATALOG = [
+  {
+    productId: "com.mergefactory.game.gems_starter",
+    title: "Gem Pouch",
+    subtitle: "+25 Scarce Gems",
+    description: "Compact reserve of 25 rare Gems for scarce workshop upgrades & Sovereign Crates.",
+    fallbackPrice: "$0.99",
+    kind: "consumable",
+    badge: "Scarce Gems",
+    icon: "💎",
+    gradient: "from-cyan-400 to-sky-600",
+    reward: { gems: 25 }
+  },
+  {
+    productId: "com.mergefactory.game.gems_vault",
+    title: "Gem Reserve Vault",
+    subtitle: "+80 Scarce Gems",
+    description: "High-capacity reserve of 80 rare Gems (+15% bonus yield) for elite expansions.",
+    fallbackPrice: "$2.99",
+    kind: "consumable",
+    badge: "Best Gem Value",
+    icon: "💠",
+    gradient: "from-sky-500 to-indigo-600",
+    reward: { gems: 80 }
+  },
+  {
+    productId: "com.mergefactory.game.bundle_boosters",
+    title: "Tactical Booster Bundle",
+    subtitle: "+2 All Consumables · +25 Energy",
+    description: "Scarce mega supply drop: +2 Quick Charge, +2 Tier Promoter, +2 Overclock, +2 Magnet, and +25 Energy.",
+    fallbackPrice: "$1.99",
+    kind: "consumable",
+    badge: "Mega Supply Pack",
+    icon: "🧰",
+    gradient: "from-violet-500 to-fuchsia-600",
+    reward: { consumablesEach: 2, energy: 25 }
+  },
+  {
+    productId: "com.mergefactory.game.crate_sovereign",
+    title: "Sovereign Apex Crate",
+    subtitle: "Tier 5–6 Part · Overclock · +10 Gems",
+    description: "Flagship delivery: guaranteed Tier 5–6 part on your table, +1 Overclock Core, +20 Energy, and +10 Gems.",
+    fallbackPrice: "$3.99",
+    kind: "consumable",
+    badge: "Scarce Apex Drop",
+    icon: "👑",
+    gradient: "from-amber-400 via-orange-500 to-rose-500",
+    reward: {
+      crateTierRange: [5, 6],
+      specificConsumable: "overclock_core",
+      energy: 20,
+      gems: 10
+    }
+  },
+  {
+    productId: IAP_SKU_GOLDEN_TURBINE,
+    title: "Golden Turbine Charter",
+    subtitle: "Permanent +100% Plant Output · +10 Max Energy",
+    description: "One-time permanent license doubling all automated machine & offline Coin generation plus +10 Max Energy.",
+    fallbackPrice: "$4.99",
+    kind: "non_consumable",
+    badge: "Permanent Charter",
+    icon: "⚡",
+    gradient: "from-amber-500 to-yellow-500",
+    reward: {
+      perkDescription: "Permanent 2x Plant Income & +10 Max Energy"
+    }
+  },
+  {
+    productId: IAP_SKU_CONTRACT_SEAL,
+    title: "Master Contract Charter",
+    subtitle: "Permanent +50% Contract Coins · +8 Vault Slots",
+    description: "One-time permanent license increasing all Client Contract Coin payouts by +50% and adding +8 Asset Vault slots.",
+    fallbackPrice: "$4.99",
+    kind: "non_consumable",
+    badge: "Permanent Charter",
+    icon: "🏛️",
+    gradient: "from-emerald-500 to-teal-600",
+    reward: {
+      perkDescription: "Permanent +50% Contract Payouts & +8 Vault Slots"
+    }
+  }
+];
+const ALL_IAP_PRODUCT_IDS = IAP_CATALOG.map((p) => p.productId);
+function isNativeBillingPlatform() {
+  try {
+    return Capacitor.isNativePlatform();
+  } catch {
+    return false;
+  }
+}
+async function checkBillingSupported() {
+  if (!isNativeBillingPlatform()) return false;
+  try {
+    const res = await NativePurchases.isBillingSupported();
+    return Boolean(res.isBillingSupported);
+  } catch {
+    return false;
+  }
+}
+async function fetchStoreProductsMap() {
+  const map = {};
+  if (!isNativeBillingPlatform()) return map;
+  try {
+    const supported = await checkBillingSupported();
+    if (!supported) return map;
+    const { products } = await NativePurchases.getProducts({
+      productIdentifiers: ALL_IAP_PRODUCT_IDS,
+      productType: PURCHASE_TYPE.INAPP
+    });
+    for (const p of products || []) {
+      map[p.identifier] = p;
+    }
+  } catch (err) {
+    console.warn("[IAP] Failed to fetch store products:", err);
+  }
+  return map;
+}
+async function purchaseIapProduct(item, offerToken) {
+  if (!isNativeBillingPlatform()) {
+    return {
+      ok: false,
+      webPreview: true,
+      productId: item.productId,
+      message: `Google Play Billing (${item.productId}) is active inside the Android Play app.`
+    };
+  }
+  try {
+    const supported = await checkBillingSupported();
+    if (!supported) {
+      return {
+        ok: false,
+        productId: item.productId,
+        message: "Google Play Billing is unavailable on this device."
+      };
+    }
+    const tx = await NativePurchases.purchaseProduct({
+      productIdentifier: item.productId,
+      productType: PURCHASE_TYPE.INAPP,
+      isConsumable: item.kind === "consumable",
+      offerToken
+    });
+    const state = (tx.purchaseState || "").toUpperCase();
+    if (state === "PENDING") {
+      return {
+        ok: false,
+        productId: item.productId,
+        transactionId: tx.transactionId,
+        message: "Purchase is pending Google Play confirmation."
+      };
+    }
+    return {
+      ok: true,
+      productId: item.productId,
+      transactionId: tx.transactionId,
+      message: `${item.title} purchased via Google Play!`
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err || "Purchase failed");
+    const lower = msg.toLowerCase();
+    const cancelled = lower.includes("cancel") || lower.includes("user_canceled");
+    return {
+      ok: false,
+      cancelled,
+      productId: item.productId,
+      message: cancelled ? "Purchase cancelled." : msg || "Could not complete Google Play purchase."
+    };
+  }
+}
+async function restoreOwnedNonConsumableIds() {
+  if (!isNativeBillingPlatform()) {
+    return {
+      ok: false,
+      ownedIds: [],
+      message: "Restore Purchases connects to Google Play inside the Android app."
+    };
+  }
+  try {
+    const nonConsumables = new Set(
+      IAP_CATALOG.filter((p) => p.kind === "non_consumable").map((p) => p.productId)
+    );
+    const { purchases } = await NativePurchases.getPurchases({
+      productType: PURCHASE_TYPE.INAPP
+    });
+    const ownedIds = Array.from(
+      new Set(
+        (purchases || []).filter((p) => nonConsumables.has(p.productIdentifier)).map((p) => p.productIdentifier)
+      )
+    );
+    return {
+      ok: true,
+      ownedIds,
+      message: ownedIds.length > 0 ? `Restored ${ownedIds.length} permanent charter(s) from Google Play.` : "No unconsumed Google Play charters found for this account."
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err || "Restore failed");
+    return {
+      ok: false,
+      ownedIds: [],
+      message: msg
+    };
+  }
+}
 const ShopView = ({
   state,
   onUpdateState,
@@ -19931,9 +20960,22 @@ const ShopView = ({
   const [feedbackMsg, setFeedbackMsg] = reactExports.useState(null);
   const [rewardModal, setRewardModal] = reactExports.useState(null);
   const [inspectedConsumable, setInspectedConsumable] = reactExports.useState(null);
+  const [storeProducts, setStoreProducts] = reactExports.useState({});
+  const [purchasingSku, setPurchasingSku] = reactExports.useState(null);
+  const [isRestoring, setIsRestoring] = reactExports.useState(false);
+  const isNative = isNativeBillingPlatform();
   reactExports.useEffect(() => {
     setActiveTab(initialSubTab);
   }, [initialSubTab]);
+  reactExports.useEffect(() => {
+    let active = true;
+    void fetchStoreProductsMap().then((map) => {
+      if (active) setStoreProducts(map);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [dailyGiftClaimed, setDailyGiftClaimed] = reactExports.useState(() => {
     try {
       const savedDate = localStorage.getItem("idle_factory_shop_daily_gift");
@@ -19963,12 +21005,127 @@ const ShopView = ({
   }, []);
   const notify = (text, type = "success") => {
     setFeedbackMsg({ type, text });
-    setTimeout(() => setFeedbackMsg(null), 3200);
+    setTimeout(() => setFeedbackMsg(null), 3500);
   };
   const openCelebration = (data) => {
     soundManager.playSound("upgrade", state.settings.soundFx);
-    confetti({ particleCount: 55, spread: 70, origin: { y: 0.45 } });
+    triggerConfetti({ particleCount: 55, spread: 70, origin: { y: 0.45 } });
     setRewardModal(data);
+  };
+  const grantIapEntitlement = (item) => {
+    const categories = ["wood", "metal", "tech", "gem"];
+    const crateRange = item.reward.crateTierRange;
+    const rolledCat = categories[Math.floor(Math.random() * categories.length)];
+    const rolledTier = crateRange ? crateRange[0] + Math.floor(Math.random() * (crateRange[1] - crateRange[0] + 1)) : 5;
+    onUpdateState((prev) => {
+      const nextConsumables = { ...prev.consumables };
+      if (item.reward.consumablesEach) {
+        CONSUMABLE_LIST.forEach((c) => {
+          nextConsumables[c.id] = Math.min(c.maxStock + 3, (nextConsumables[c.id] || 0) + item.reward.consumablesEach);
+        });
+      }
+      if (item.reward.specificConsumable) {
+        const cDef = CONSUMABLE_DEFINITIONS[item.reward.specificConsumable];
+        nextConsumables[item.reward.specificConsumable] = Math.min(
+          cDef.maxStock + 3,
+          (nextConsumables[item.reward.specificConsumable] || 0) + 1
+        );
+      }
+      const nextBoard = [...prev.board];
+      const nextInv = [...prev.inventory];
+      if (crateRange) {
+        const newItem = {
+          id: `iap_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          tier: rolledTier,
+          category: rolledCat
+        };
+        const emptyIdx = nextBoard.findIndex((c) => c.item === null);
+        if (emptyIdx !== -1) {
+          nextBoard[emptyIdx] = { ...nextBoard[emptyIdx], item: newItem };
+        } else {
+          nextInv.push(newItem);
+        }
+      }
+      const prevOwned = prev.ownedIapIds || [];
+      const alreadyOwned = prevOwned.includes(item.productId);
+      const nextOwned = item.kind === "non_consumable" && !alreadyOwned ? [...prevOwned, item.productId] : prevOwned;
+      const addMaxEnergy = item.productId === IAP_SKU_GOLDEN_TURBINE && !alreadyOwned ? 10 : 0;
+      const addVaultSlots = item.productId === IAP_SKU_CONTRACT_SEAL && !alreadyOwned ? 8 : 0;
+      const nextMaxEnergy = prev.maxEnergy + addMaxEnergy;
+      const nextEnergy = Math.min(
+        nextMaxEnergy,
+        prev.energy + (item.reward.energy || 0) + addMaxEnergy
+      );
+      return {
+        ...prev,
+        gems: prev.gems + (item.reward.gems || 0),
+        maxEnergy: nextMaxEnergy,
+        energy: nextEnergy,
+        maxInventoryCapacity: prev.maxInventoryCapacity + addVaultSlots,
+        board: nextBoard,
+        inventory: nextInv,
+        consumables: nextConsumables,
+        ownedIapIds: nextOwned,
+        stats: {
+          ...prev.stats,
+          highestTierUnlocked: crateRange ? Math.max(prev.stats.highestTierUnlocked, rolledTier) : prev.stats.highestTierUnlocked
+        }
+      };
+    });
+    openCelebration({
+      title: `${item.title} Unlocked!`,
+      subtitle: item.subtitle,
+      gems: item.reward.gems,
+      energy: item.reward.energy,
+      badgeText: crateRange ? `Delivered T${rolledTier} ${getItemDef(rolledCat, rolledTier).name}` : item.badge
+    });
+  };
+  const handlePurchaseIap = async (item) => {
+    const owned = (state.ownedIapIds || []).includes(item.productId);
+    if (item.kind === "non_consumable" && owned) {
+      notify(`${item.title} is already permanently active on your workshop.`, "success");
+      return;
+    }
+    if (purchasingSku) return;
+    setPurchasingSku(item.productId);
+    const storeProd = storeProducts[item.productId];
+    const result = await purchaseIapProduct(item, storeProd == null ? void 0 : storeProd.offerToken);
+    setPurchasingSku(null);
+    if (result.ok) {
+      grantIapEntitlement(item);
+    } else {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(result.message, "error");
+    }
+  };
+  const handleRestorePurchases = async () => {
+    if (isRestoring) return;
+    setIsRestoring(true);
+    const res = await restoreOwnedNonConsumableIds();
+    setIsRestoring(false);
+    if (!res.ok) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(res.message, "error");
+      return;
+    }
+    if (res.ownedIds.length > 0) {
+      onUpdateState((prev) => {
+        const curOwned = prev.ownedIapIds || [];
+        const newlyRestored = res.ownedIds.filter((id) => !curOwned.includes(id));
+        if (newlyRestored.length === 0) return prev;
+        const addMaxEnergy = newlyRestored.includes(IAP_SKU_GOLDEN_TURBINE) ? 10 : 0;
+        const addVault = newlyRestored.includes(IAP_SKU_CONTRACT_SEAL) ? 8 : 0;
+        return {
+          ...prev,
+          ownedIapIds: Array.from(/* @__PURE__ */ new Set([...curOwned, ...newlyRestored])),
+          maxEnergy: prev.maxEnergy + addMaxEnergy,
+          energy: Math.min(prev.maxEnergy + addMaxEnergy, prev.energy + addMaxEnergy),
+          maxInventoryCapacity: prev.maxInventoryCapacity + addVault
+        };
+      });
+      soundManager.playSound("upgrade", state.settings.soundFx);
+    }
+    notify(res.message, "success");
   };
   const handleUseConsumable = (id) => {
     const result = executeConsumableUse(state, id);
@@ -19977,18 +21134,47 @@ const ShopView = ({
       notify(result.message, "error");
       return;
     }
-    onUpdateState((prev) => {
-      const fresh = executeConsumableUse(prev, id);
-      return fresh.nextState;
-    });
+    onUpdateState((prev) => executeConsumableUse(prev, id).nextState);
     soundManager.playSound("upgrade", state.settings.soundFx);
     if (result.triggerConfetti) {
-      confetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
+      triggerConfetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
     }
     notify(result.message, "success");
     if (result.floatingText && onAddFloatingText) {
       onAddFloatingText(result.floatingText.text, window.innerWidth / 2, window.innerHeight / 2, result.floatingText.color);
     }
+  };
+  const handleBuyConsumableCoins = (id) => {
+    var _a2;
+    const def = CONSUMABLE_DEFINITIONS[id];
+    const current = ((_a2 = state.consumables) == null ? void 0 : _a2[id]) || 0;
+    if (current >= def.maxStock) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`${def.name} is already at max stock (${def.maxStock}).`, "error");
+      return;
+    }
+    if (state.coins < def.coinPrice) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${def.coinPrice.toLocaleString()} Coins or watch an Ad for +1 Free!`, "error");
+      return;
+    }
+    onUpdateState((prev) => {
+      var _a3;
+      const cur = ((_a3 = prev.consumables) == null ? void 0 : _a3[id]) || 0;
+      if (cur >= def.maxStock || prev.coins < def.coinPrice) return prev;
+      return {
+        ...prev,
+        coins: prev.coins - def.coinPrice,
+        consumables: {
+          ...prev.consumables,
+          [id]: Math.min(def.maxStock, cur + 1)
+        }
+      };
+    });
+    soundManager.playSound("coin", state.settings.soundFx);
+    triggerConfetti({ particleCount: 28, spread: 50, origin: { y: 0.55 } });
+    notify(`Bought +1 ${def.name}!`, "success");
+    onAddFloatingText == null ? void 0 : onAddFloatingText(`+1 ${def.name}`, window.innerWidth / 2, window.innerHeight / 2, "#059669");
   };
   const handleRefillConsumableWithAd = (id) => {
     var _a2;
@@ -20013,14 +21199,128 @@ const ShopView = ({
           };
         });
         soundManager.playSound("upgrade", state.settings.soundFx);
-        confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
-        notify(`Refilled +1 ${def.name}`, "success");
-        if (onAddFloatingText) {
-          onAddFloatingText(`+1 ${def.name}`, window.innerWidth / 2, window.innerHeight / 2, "#7C3AED");
-        }
+        triggerConfetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
+        notify(`Refilled +1 ${def.name} via Ad!`, "success");
+        onAddFloatingText == null ? void 0 : onAddFloatingText(`+1 ${def.name}`, window.innerWidth / 2, window.innerHeight / 2, "#7C3AED");
       },
       `Refill +1 ${def.name}`
     );
+  };
+  const handleBuyPremiumPerk = (perk) => {
+    var _a2;
+    const currentLevel = ((_a2 = state.premiumPerks) == null ? void 0 : _a2[perk.id]) || 0;
+    if (currentLevel >= perk.maxLevel) {
+      notify(`${perk.name} is already at max level!`, "error");
+      return;
+    }
+    const gemCost = perk.baseGemCost + currentLevel * perk.gemStep;
+    if (state.gems < gemCost) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${gemCost} scarce Gems for ${perk.name}. Earn Gems from Contracts/Daily or Google Play!`, "error");
+      return;
+    }
+    onUpdateState((prev) => {
+      var _a3;
+      const curLvl = ((_a3 = prev.premiumPerks) == null ? void 0 : _a3[perk.id]) || 0;
+      if (curLvl >= perk.maxLevel) return prev;
+      const gCost = perk.baseGemCost + curLvl * perk.gemStep;
+      if (prev.gems < gCost) return prev;
+      const nextPerks = {
+        ...prev.premiumPerks || {
+          goldenTurbineLevel: 0,
+          energyCoreUpgrades: 0,
+          vaultExpansions: 0,
+          vipContractLevel: 0
+        },
+        [perk.id]: curLvl + 1
+      };
+      const nextMaxEnergy = perk.id === "energyCoreUpgrades" ? prev.maxEnergy + 5 : prev.maxEnergy;
+      const nextEnergy = perk.id === "energyCoreUpgrades" ? Math.min(nextMaxEnergy, prev.energy + 5) : prev.energy;
+      const nextVaultCap = perk.id === "vaultExpansions" ? prev.maxInventoryCapacity + 4 : prev.maxInventoryCapacity;
+      return {
+        ...prev,
+        gems: prev.gems - gCost,
+        maxEnergy: nextMaxEnergy,
+        energy: nextEnergy,
+        maxInventoryCapacity: nextVaultCap,
+        premiumPerks: nextPerks
+      };
+    });
+    openCelebration({
+      title: `${perk.name} · Lvl ${currentLevel + 1}`,
+      subtitle: `${perk.effectPerLevel} permanently unlocked!`,
+      energy: perk.id === "energyCoreUpgrades" ? 5 : void 0,
+      badgeText: `Scarce Upgrade Active`
+    });
+  };
+  const handleBuyPremiumCrate = (crate, currency) => {
+    if (currency === "coins" && !crate.coinPrice) return;
+    const cost = currency === "coins" ? crate.coinPrice : crate.gemPrice;
+    if ((currency === "coins" ? state.coins : state.gems) < cost) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(
+        `Needs ${cost.toLocaleString()} ${currency === "coins" ? "Coins" : "Gems"} for ${crate.name}.`,
+        "error"
+      );
+      return;
+    }
+    const freeGrid = state.board.some((c) => c.item === null);
+    const freeVault = state.inventory.length < state.maxInventoryCapacity;
+    if (!freeGrid && !freeVault) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify("Workshop Grid and Asset Vault are full. Make 1 slot free before opening a crate.", "error");
+      return;
+    }
+    const categories = ["wood", "metal", "tech", "gem"];
+    const rolledCat = categories[Math.floor(Math.random() * categories.length)];
+    const rolledTier = crate.minTier + Math.floor(Math.random() * (crate.maxTier - crate.minTier + 1));
+    const rolledDef = getItemDef(rolledCat, rolledTier);
+    onUpdateState((prev) => {
+      if (currency === "coins" && (!crate.coinPrice || prev.coins < crate.coinPrice)) return prev;
+      if (currency === "gems" && prev.gems < crate.gemPrice) return prev;
+      const nextBoard = [...prev.board];
+      const nextInventory = [...prev.inventory];
+      const newItem = {
+        id: `crate_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        tier: rolledTier,
+        category: rolledCat
+      };
+      const emptyIdx = nextBoard.findIndex((c) => c.item === null);
+      if (emptyIdx !== -1) {
+        nextBoard[emptyIdx] = { ...nextBoard[emptyIdx], item: newItem };
+      } else if (nextInventory.length < prev.maxInventoryCapacity) {
+        nextInventory.push(newItem);
+      } else {
+        return prev;
+      }
+      const nextConsumables = { ...prev.consumables };
+      if (crate.bonusConsumable) {
+        const cDef = CONSUMABLE_DEFINITIONS[crate.bonusConsumable];
+        nextConsumables[crate.bonusConsumable] = Math.min(
+          cDef.maxStock + 2,
+          (nextConsumables[crate.bonusConsumable] || 0) + 1
+        );
+      }
+      return {
+        ...prev,
+        coins: currency === "coins" ? prev.coins - crate.coinPrice : prev.coins,
+        gems: currency === "gems" ? prev.gems - crate.gemPrice : prev.gems,
+        energy: Math.min(prev.maxEnergy, prev.energy + crate.bonusEnergy),
+        board: nextBoard,
+        inventory: nextInventory,
+        consumables: nextConsumables,
+        stats: {
+          ...prev.stats,
+          highestTierUnlocked: Math.max(prev.stats.highestTierUnlocked, rolledTier)
+        }
+      };
+    });
+    openCelebration({
+      title: `${crate.name} Opened!`,
+      subtitle: `Received T${rolledTier} ${rolledDef.name}${crate.bonusConsumable ? ` + 1 ${CONSUMABLE_DEFINITIONS[crate.bonusConsumable].name}` : ""}`,
+      energy: crate.bonusEnergy,
+      badgeText: `T${rolledTier} ${rolledDef.name}`
+    });
   };
   const handleBuyCoinsWithGems = (gemCost, coinGain, tierLabel) => {
     if (state.gems < gemCost) {
@@ -20040,9 +21340,7 @@ const ShopView = ({
         }
       };
     });
-    if (onAddFloatingText) {
-      onAddFloatingText(`+${coinGain.toLocaleString()} Coins`, window.innerWidth / 2, window.innerHeight / 2, "#D97706");
-    }
+    onAddFloatingText == null ? void 0 : onAddFloatingText(`+${coinGain.toLocaleString()} Coins`, window.innerWidth / 2, window.innerHeight / 2, "#D97706");
     openCelebration({
       title: `${tierLabel} Completed`,
       subtitle: `Converted ${gemCost} Gems into ${coinGain.toLocaleString()} Coins`,
@@ -20054,7 +21352,7 @@ const ShopView = ({
       notify(`Daily Ration claimed. Resets in ${timeUntilMidnight}`, "success");
       return;
     }
-    const freeCoins = 80;
+    const freeCoins = 100;
     const freeEnergy = 6;
     onUpdateState((prev) => ({
       ...prev,
@@ -20071,9 +21369,7 @@ const ShopView = ({
     } catch {
     }
     setDailyGiftClaimed(true);
-    if (onAddFloatingText) {
-      onAddFloatingText("+80 Coins · +6 Energy", window.innerWidth / 2, window.innerHeight / 2, "#059669");
-    }
+    onAddFloatingText == null ? void 0 : onAddFloatingText("+100 Coins · +6 Energy", window.innerWidth / 2, window.innerHeight / 2, "#059669");
     openCelebration({
       title: "Daily Shift Ration",
       subtitle: "Supply stipend for active plant operators.",
@@ -20087,7 +21383,7 @@ const ShopView = ({
         /* @__PURE__ */ jsxRuntimeExports.jsx(Store, { className: "w-4 h-4 text-violet-600" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Marketplace & Supply Hub" })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-0.5", children: "Trade workshop items freely, refill tactical consumables via ads, or exchange Gems." })
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-0.5", children: "Ad-powered medium boosters, Coin trade market, and scarce Google Play IAP gear." })
     ] }) }),
     feedbackMsg && /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "div",
@@ -20104,11 +21400,12 @@ const ShopView = ({
         ]
       }
     ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-4 gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-5 gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm", children: [
       { id: "marketplace", label: "Trade" },
-      { id: "consumables", label: "Consumables" },
+      { id: "consumables", label: "Boosts" },
+      { id: "premium", label: "Play IAP" },
       { id: "currency", label: "Exchange" },
-      { id: "daily", label: dailyGiftClaimed ? "Daily" : "Daily (1)" }
+      { id: "daily", label: dailyGiftClaimed ? "Daily" : "Daily!" }
     ].map((tab) => /* @__PURE__ */ jsxRuntimeExports.jsx(
       "button",
       {
@@ -20116,7 +21413,7 @@ const ShopView = ({
           soundManager.playSound("click", state.settings.soundFx);
           setActiveTab(tab.id);
         },
-        className: `py-2 px-1 rounded-lg text-[11px] sm:text-xs font-bold transition cursor-pointer whitespace-nowrap ${activeTab === tab.id ? "bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`,
+        className: `py-2 px-1 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap truncate ${activeTab === tab.id ? "bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 shadow-sm" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`,
         children: tab.label
       },
       tab.id
@@ -20130,13 +21427,23 @@ const ShopView = ({
       }
     ),
     activeTab === "consumables" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-gradient-to-r from-violet-50 via-white to-sky-50 border border-violet-200 rounded-2xl p-3.5 shadow-sm", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-between gap-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-9 h-9 rounded-xl bg-violet-100 border border-violet-300 flex items-center justify-center text-violet-700 shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4" }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xs font-extrabold text-slate-900", children: "Ad-Refillable Consumables" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5", children: "100% free — watch a short sponsored ad to refill any consumable charge." })
-        ] })
-      ] }) }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-r from-violet-50 via-white to-amber-50 border-2 border-violet-300 rounded-2xl p-3.5 shadow-sm flex items-center justify-between gap-2.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5 min-w-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ShoppingBag, { className: "w-5 h-5" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xs font-extrabold text-slate-900 truncate", children: "Need Mega Booster Bundles?" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5", children: "Refill single Boosters free via Ads or Coins, or get Tactical Mega Bundles in Play IAP!" })
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => setActiveTab("premium"),
+            className: "px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs shrink-0 cursor-pointer active:scale-95 transition shadow-sm",
+            children: "View IAP"
+          }
+        )
+      ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-col gap-2.5", children: CONSUMABLE_LIST.map((con) => {
         var _a2;
         const stock = ((_a2 = state.consumables) == null ? void 0 : _a2[con.id]) || 0;
@@ -20165,7 +21472,10 @@ const ShopView = ({
                       /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "text-sm font-extrabold text-slate-900 truncate", children: con.name }),
                       /* @__PURE__ */ jsxRuntimeExports.jsx(Info, { className: "w-3.5 h-3.5 text-sky-500 shrink-0" })
                     ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-violet-700", children: con.badge }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-violet-700", children: [
+                      con.badge,
+                      " · Medium Booster"
+                    ] }),
                     /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5 leading-snug", children: con.shortDesc })
                   ] })
                 ] }),
@@ -20181,26 +21491,40 @@ const ShopView = ({
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", onClick: (e) => e.stopPropagation(), children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", onClick: (e) => e.stopPropagation(), children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => handleRefillConsumableWithAd(con.id),
+                      disabled: isFull,
+                      className: `py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${isFull ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm cursor-pointer"}`,
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isFull ? "Max Stock" : "Free +1 · Ad" })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => handleBuyConsumableCoins(con.id),
+                      disabled: isFull,
+                      className: `py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 tabular-nums ${isFull ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 cursor-pointer"}`,
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-3.5 h-3.5 text-amber-600 shrink-0" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isFull ? "Maxed" : `Buy · ${con.coinPrice}` })
+                      ]
+                    }
+                  )
+                ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(
                   "button",
                   {
                     onClick: () => handleUseConsumable(con.id),
                     disabled: !hasCharge,
-                    className: `flex-1 py-2.5 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 ${hasCharge ? "bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm cursor-pointer" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"}`,
-                    children: hasCharge ? "Use Now" : "Empty"
-                  }
-                ),
-                /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                  "button",
-                  {
-                    onClick: () => handleRefillConsumableWithAd(con.id),
-                    disabled: isFull,
-                    className: `flex-[1.35] py-2.5 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${isFull ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-sm cursor-pointer"}`,
-                    children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isFull ? "Max Stock" : "Refill +1 · Watch Ad" })
-                    ]
+                    className: `w-full py-2.5 px-3 rounded-xl font-extrabold text-xs transition active:scale-95 ${hasCharge ? "bg-emerald-500 hover:bg-emerald-400 text-white shadow-sm cursor-pointer" : "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"}`,
+                    children: hasCharge ? `Use ${con.name}` : "Empty — Watch Ad or Buy Above"
                   }
                 )
               ] })
@@ -20209,6 +21533,202 @@ const ShopView = ({
           con.id
         );
       }) })
+    ] }),
+    activeTab === "premium" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-r from-amber-50 via-white to-violet-50 border border-amber-300 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-between gap-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-600 shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Crown, { className: "w-5 h-5" }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xs font-extrabold text-slate-900", children: "Google Play Premium Store" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5", children: isNative ? "Official Google Play Billing checkout for scarce Gems, Mega Bundles & Permanent Charters." : "Google Play Billing items (checkout opens inside the Android Play app)." })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => void handleRestorePurchases(),
+            disabled: isRestoring,
+            className: "w-full py-2 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition",
+            children: [
+              isRestoring ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-3.5 h-3.5 animate-spin" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "w-3.5 h-3.5 text-indigo-600" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isRestoring ? "Checking Google Play..." : "Restore Google Play Purchases" })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-extrabold text-slate-800 px-1 flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "w-3.5 h-3.5 text-emerald-600" }),
+          " Scarce Bundles, Gems & Charters (IAP)"
+        ] }),
+        IAP_CATALOG.map((item) => {
+          const storeProd = storeProducts[item.productId];
+          const priceLabel = (storeProd == null ? void 0 : storeProd.priceString) || item.fallbackPrice;
+          const isOwned = item.kind === "non_consumable" && (state.ownedIapIds || []).includes(item.productId);
+          const isBusy = purchasingSku === item.productId;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: `bg-white border-2 rounded-2xl p-3.5 flex flex-col gap-2.5 shadow-sm ${isOwned ? "border-emerald-300 bg-emerald-50/30" : "border-indigo-200/80"}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-start justify-between gap-2.5", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 min-w-0", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "div",
+                    {
+                      className: `w-11 h-11 rounded-xl bg-gradient-to-br ${item.gradient} text-white flex items-center justify-center text-2xl shrink-0 shadow-xs`,
+                      children: item.icon
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5 flex-wrap", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "text-sm font-extrabold text-slate-900", children: item.title }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-800", children: item.badge })
+                    ] }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-emerald-700 block mt-0.5", children: item.subtitle }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5 leading-snug", children: item.description })
+                  ] })
+                ] }) }),
+                isOwned ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-extrabold text-center flex items-center justify-center gap-1.5", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "w-4 h-4 text-emerald-600" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Charter Active Permanently" })
+                ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    onClick: () => void handlePurchaseIap(item),
+                    disabled: isBusy,
+                    className: "w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs flex items-center justify-between shadow-sm cursor-pointer active:scale-95 transition disabled:opacity-60",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-semibold opacity-90 truncate max-w-[65%]", children: [
+                        "Google Play · ",
+                        item.productId.split(".").pop()
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-white/20 px-2.5 py-1 rounded-lg font-extrabold tabular-nums", children: isBusy ? "Processing..." : priceLabel })
+                    ]
+                  }
+                )
+              ]
+            },
+            item.productId
+          );
+        })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2.5 pt-1", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-extrabold text-slate-800 px-1 flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-3.5 h-3.5 text-cyan-600" }),
+          " Scarce Gem Workshop Upgrades"
+        ] }),
+        PREMIUM_PERK_DEFS.map((perk) => {
+          var _a2;
+          const currentLevel = ((_a2 = state.premiumPerks) == null ? void 0 : _a2[perk.id]) || 0;
+          const isMax = currentLevel >= perk.maxLevel;
+          const gemCost = perk.baseGemCost + currentLevel * perk.gemStep;
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: "bg-white border border-cyan-200 rounded-2xl p-3.5 flex flex-col gap-2.5 shadow-sm",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start justify-between gap-2.5", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 min-w-0", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(
+                      "div",
+                      {
+                        className: `w-11 h-11 rounded-xl bg-gradient-to-br ${perk.accentGradient} text-white flex items-center justify-center text-2xl shrink-0 shadow-xs`,
+                        children: perk.icon
+                      }
+                    ),
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "text-sm font-extrabold text-slate-900 truncate", children: perk.name }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-emerald-700 block", children: perk.effectPerLevel }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5 leading-snug", children: perk.shortDesc })
+                    ] })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-extrabold font-mono-num px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 shrink-0 tabular-nums", children: [
+                    "Lvl ",
+                    currentLevel,
+                    "/",
+                    perk.maxLevel
+                  ] })
+                ] }),
+                isMax ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-extrabold text-center", children: "Max Level Reached" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    onClick: () => handleBuyPremiumPerk(perk),
+                    className: "w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-600 hover:from-cyan-400 hover:to-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition tabular-nums shadow-sm",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Gem, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                        "Upgrade · ",
+                        gemCost,
+                        " Scarce Gems"
+                      ] })
+                    ]
+                  }
+                )
+              ]
+            },
+            perk.id
+          );
+        })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-extrabold text-slate-800 px-1 flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Package, { className: "w-3.5 h-3.5 text-violet-600" }),
+          " Scarce Supply Crates"
+        ] }),
+        PREMIUM_CRATE_DEFS.map((crate) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "div",
+          {
+            className: "bg-white border border-amber-200 rounded-2xl p-3.5 flex flex-col gap-2.5 shadow-sm",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-3", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "div",
+                  {
+                    className: `w-11 h-11 rounded-xl bg-gradient-to-br ${crate.gradient} text-white flex items-center justify-center text-2xl shrink-0 shadow-xs`,
+                    children: crate.icon
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "text-sm font-extrabold text-slate-900 truncate", children: crate.name }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-amber-700", children: crate.badge }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-600 mt-0.5 leading-snug", children: crate.description })
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `grid ${crate.coinPrice ? "grid-cols-2" : "grid-cols-1"} gap-2`, children: [
+                crate.coinPrice && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    onClick: () => handleBuyPremiumCrate(crate, "coins"),
+                    className: "py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition tabular-nums shadow-sm",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                        crate.coinPrice.toLocaleString(),
+                        " Coins"
+                      ] })
+                    ]
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                  "button",
+                  {
+                    onClick: () => handleBuyPremiumCrate(crate, "gems"),
+                    className: "py-2.5 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition tabular-nums shadow-sm",
+                    children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsx(Gem, { className: "w-3.5 h-3.5" }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                        crate.gemPrice,
+                        " Scarce Gems"
+                      ] })
+                    ]
+                  }
+                )
+              ] })
+            ]
+          },
+          crate.id
+        ))
+      ] })
     ] }),
     activeTab === "currency" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
@@ -20240,9 +21760,7 @@ const ShopView = ({
                   };
                 });
                 notify("2x Machine Output active for +5 minutes!", "success");
-                if (onAddFloatingText) {
-                  onAddFloatingText("2x Plant Output (5m)", window.innerWidth / 2, window.innerHeight / 2, "#D97706");
-                }
+                onAddFloatingText == null ? void 0 : onAddFloatingText("2x Plant Output (5m)", window.innerWidth / 2, window.innerHeight / 2, "#D97706");
               }),
               className: "px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition shrink-0 cursor-pointer whitespace-nowrap",
               children: [
@@ -20256,13 +21774,13 @@ const ShopView = ({
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2.5", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between px-1", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-extrabold text-amber-800", children: "Gem-to-Coin Exchange" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] text-slate-500 font-medium", children: "Spend earned Gems" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] text-slate-500 font-medium", children: "Convert scarce Gems" })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 gap-2.5", children: [
-          { gems: 10, coins: 600, label: "Working Capital" },
-          { gems: 30, coins: 2e3, label: "Operating Fund" },
-          { gems: 75, coins: 5500, label: "Plant Reserve" },
-          { gems: 140, coins: 12e3, label: "Capital Ledger" }
+          { gems: 5, coins: 450, label: "Working Capital" },
+          { gems: 15, coins: 1500, label: "Operating Fund" },
+          { gems: 35, coins: 4e3, label: "Plant Reserve" },
+          { gems: 75, coins: 1e4, label: "Capital Ledger" }
         ].map((tier) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "div",
           {
@@ -20300,7 +21818,7 @@ const ShopView = ({
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-extrabold text-slate-900", children: "Daily Supply Ration" }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] text-slate-600 tabular-nums mt-0.5", children: [
-            "+80 Coins · +6 Energy ",
+            "+100 Coins · +6 Energy ",
             dailyGiftClaimed ? `· Resets ${timeUntilMidnight}` : "· Available now"
           ] })
         ] }),
@@ -20328,9 +21846,7 @@ const ShopView = ({
                 energy: Math.min(prev.maxEnergy, prev.energy + 12)
               }));
               notify("+12 Energy restored.", "success");
-              if (onAddFloatingText) {
-                onAddFloatingText("+12 Energy", window.innerWidth / 2, window.innerHeight / 2, "#059669");
-              }
+              onAddFloatingText == null ? void 0 : onAddFloatingText("+12 Energy", window.innerWidth / 2, window.innerHeight / 2, "#059669");
             }),
             className: "bg-white border border-emerald-200 hover:border-emerald-400 rounded-2xl p-3.5 flex flex-col items-center gap-2 active:scale-95 transition text-center cursor-pointer shadow-sm",
             children: [
@@ -20356,9 +21872,7 @@ const ShopView = ({
                 }
               }));
               notify("+180 Coins credited.", "success");
-              if (onAddFloatingText) {
-                onAddFloatingText("+180 Coins", window.innerWidth / 2, window.innerHeight / 2, "#D97706");
-              }
+              onAddFloatingText == null ? void 0 : onAddFloatingText("+180 Coins", window.innerWidth / 2, window.innerHeight / 2, "#D97706");
             }),
             className: "bg-white border border-amber-200 hover:border-amber-400 rounded-2xl p-3.5 flex flex-col items-center gap-2 active:scale-95 transition text-center cursor-pointer shadow-sm",
             children: [
@@ -20379,6 +21893,7 @@ const ShopView = ({
         consumable: inspectedConsumable,
         consumableStock: ((_a = state.consumables) == null ? void 0 : _a[inspectedConsumable.id]) || 0,
         onUseConsumable: () => handleUseConsumable(inspectedConsumable.id),
+        onBuyConsumableCoins: () => handleBuyConsumableCoins(inspectedConsumable.id),
         onRefillConsumable: () => handleRefillConsumableWithAd(inspectedConsumable.id),
         onClose: () => setInspectedConsumable(null)
       }
@@ -20416,6 +21931,10 @@ const ShopView = ({
             rewardModal.energy,
             " Energy"
           ] })
+        ] }),
+        rewardModal.badgeText && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-2 bg-white border border-violet-200 rounded-xl p-2 flex items-center justify-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 text-violet-500" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-extrabold text-violet-800", children: rewardModal.badgeText })
         ] })
       ] }) }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 w-full", children: [
@@ -20447,6 +21966,1108 @@ const ShopView = ({
         )
       ] })
     ] }) })
+  ] });
+};
+const WHEEL_SLICES = [
+  { id: "c120", label: "+120 Coins", short: "120🪙", color: "#FEF3C7", textColor: "#92400E", rewardType: "coins", amount: 120 },
+  { id: "g1", label: "+1 Scarce Gem", short: "+1💎", color: "#CFFAFE", textColor: "#155E75", rewardType: "gems", amount: 1 },
+  { id: "c350", label: "+350 Coins", short: "350🪙", color: "#FDE68A", textColor: "#78350F", rewardType: "coins", amount: 350 },
+  { id: "e12", label: "+12 Energy", short: "+12⚡", color: "#D1FAE5", textColor: "#065F46", rewardType: "energy", amount: 12 },
+  { id: "c700", label: "+700 Coins", short: "700🪙", color: "#FDBA74", textColor: "#7C2D12", rewardType: "coins", amount: 700 },
+  { id: "cell", label: "+1 Charge Cell", short: "🔋+1", color: "#EDE9FE", textColor: "#5B21B6", rewardType: "consumable", amount: 1 },
+  { id: "part3", label: "Tier 3 Workshop Part", short: "T3📦", color: "#E0F2FE", textColor: "#075985", rewardType: "part", amount: 3 },
+  { id: "jackpot", label: "JACKPOT +1,500 Coins", short: "1.5K👑", color: "#F59E0B", textColor: "#FFFFFF", rewardType: "coins", amount: 1500 }
+];
+const WHEEL_WEIGHTS = [26, 10, 19, 17, 10, 8, 7, 3];
+const SLOT_SYMBOLS = [
+  { icon: "⚙️", name: "Gear", mult3: 4 },
+  { icon: "🪵", name: "Timber", mult3: 4 },
+  { icon: "⚡", name: "Spark", mult3: 6 },
+  { icon: "👑", name: "Crown", mult3: 10 },
+  { icon: "💎", name: "Diamond", mult3: 14 },
+  { icon: "7️⃣", name: "Lucky 7", mult3: 24 }
+];
+const SCRATCH_SYMBOLS = [
+  { icon: "⚙️", label: "Gear Set", coins: 400, gems: 0 },
+  { icon: "🪵", label: "Timber Lot", coins: 550, gems: 0 },
+  { icon: "⚡", label: "Surge Cell", coins: 850, gems: 0 },
+  { icon: "💎", label: "Rare Crystal", coins: 1200, gems: 1 },
+  { icon: "👑", label: "Crown Bullion", coins: 2e3, gems: 0 }
+];
+function createScratchTicket() {
+  const roll = Math.random();
+  let winTier = null;
+  if (roll < 0.04) winTier = SCRATCH_SYMBOLS[4];
+  else if (roll < 0.11) winTier = SCRATCH_SYMBOLS[3];
+  else if (roll < 0.24) winTier = SCRATCH_SYMBOLS[2];
+  else if (roll < 0.44) winTier = SCRATCH_SYMBOLS[1];
+  else if (roll < 0.68) winTier = SCRATCH_SYMBOLS[0];
+  const cells = [];
+  if (winTier) {
+    cells.push(winTier.icon, winTier.icon, winTier.icon);
+    const others = SCRATCH_SYMBOLS.filter((s) => s.icon !== winTier.icon);
+    const counts = {};
+    while (cells.length < 9) {
+      const candidate = others[Math.floor(Math.random() * others.length)].icon;
+      if ((counts[candidate] || 0) < 2) {
+        counts[candidate] = (counts[candidate] || 0) + 1;
+        cells.push(candidate);
+      }
+    }
+  } else {
+    const counts = {};
+    while (cells.length < 9) {
+      const candidate = SCRATCH_SYMBOLS[Math.floor(Math.random() * SCRATCH_SYMBOLS.length)].icon;
+      if ((counts[candidate] || 0) < 2) {
+        counts[candidate] = (counts[candidate] || 0) + 1;
+        cells.push(candidate);
+      }
+    }
+  }
+  for (let i = cells.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cells[i], cells[j]] = [cells[j], cells[i]];
+  }
+  return {
+    cost: 250,
+    cells,
+    revealed: Array(9).fill(false),
+    winTier,
+    settled: false
+  };
+}
+const SAFE_POOLS = [
+  { label: "+750 Coins & +1 Gem", tier: "grand", coins: 750, gems: 1, energy: 0 },
+  { label: "+280 Coins & +8 Energy", tier: "solid", coins: 280, gems: 0, energy: 8 },
+  { label: "+120 Coins & +1 Promoter", tier: "starter", coins: 120, gems: 0, energy: 0, consumable: true }
+];
+const DieFace = ({ value, rolling }) => {
+  const pipsMap = {
+    1: [4],
+    2: [0, 8],
+    3: [0, 4, 8],
+    4: [0, 2, 6, 8],
+    5: [0, 2, 4, 6, 8],
+    6: [0, 2, 3, 5, 6, 8]
+  };
+  const active = pipsMap[value] || [4];
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    "div",
+    {
+      className: `w-16 h-16 rounded-2xl bg-white border-2 border-indigo-200 shadow-md p-2.5 grid grid-cols-3 grid-rows-3 gap-1 place-items-center transition-transform duration-150 ${rolling ? "animate-spin" : ""}`,
+      children: Array.from({ length: 9 }).map((_, idx) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        "span",
+        {
+          className: `w-2.5 h-2.5 rounded-full ${active.includes(idx) ? value === 1 || value === 6 ? "bg-rose-600" : "bg-slate-900" : "bg-transparent"}`
+        },
+        idx
+      ))
+    }
+  );
+};
+const ArcadeView = ({
+  state,
+  onUpdateState,
+  onTriggerRewardedAd,
+  onAddFloatingText
+}) => {
+  var _a, _b, _c, _d, _e;
+  const [gameTab, setGameTab] = reactExports.useState("wheel");
+  const [bannerMsg, setBannerMsg] = reactExports.useState(null);
+  const [wheelRotation, setWheelRotation] = reactExports.useState(0);
+  const [isWheelSpinning, setIsWheelSpinning] = reactExports.useState(false);
+  const [slotStake, setSlotStake] = reactExports.useState(150);
+  const [reels, setReels] = reactExports.useState([5, 4, 5]);
+  const [isSlotSpinning, setIsSlotSpinning] = reactExports.useState(false);
+  const [slotLastResult, setSlotLastResult] = reactExports.useState("Match 2 or 3 symbols to win up to 24x!");
+  const [scratchTicket, setScratchTicket] = reactExports.useState(null);
+  const [diceStake, setDiceStake] = reactExports.useState(150);
+  const [diceValues, setDiceValues] = reactExports.useState([4, 3]);
+  const [isDiceRolling, setIsDiceRolling] = reactExports.useState(false);
+  const [diceLastResult, setDiceLastResult] = reactExports.useState("Predict Under 7, Exact 7, or Over 7!");
+  const [safeRoundId, setSafeRoundId] = reactExports.useState(1);
+  const [shuffledSafes, setShuffledSafes] = reactExports.useState(
+    () => [...SAFE_POOLS].sort(() => Math.random() - 0.5)
+  );
+  const [openedSafeIdx, setOpenedSafeIdx] = reactExports.useState(null);
+  const timersRef = reactExports.useRef([]);
+  reactExports.useEffect(() => {
+    return () => {
+      timersRef.current.forEach((t) => window.clearTimeout(t));
+      timersRef.current = [];
+    };
+  }, []);
+  const scheduleTimer = (fn, ms) => {
+    const id = window.setTimeout(fn, ms);
+    timersRef.current.push(id);
+    return id;
+  };
+  const notify = (text, type = "win") => {
+    setBannerMsg({ type, text });
+  };
+  const todayStr = getLocalTodayString();
+  const isNewSpinDay = (((_a = state.arcade) == null ? void 0 : _a.lastSpinResetDate) || "") !== todayStr;
+  const nonAdSpinsLeft = isNewSpinDay ? 3 : Math.max(0, ((_b = state.arcade) == null ? void 0 : _b.dailyCasinoSpinsLeft) ?? 3);
+  const hasFreeDailySpin = (((_c = state.arcade) == null ? void 0 : _c.lastFreeSpinDate) || "") !== todayStr;
+  const handleWatchAdForSpins = () => {
+    onTriggerRewardedAd(
+      "arcade_spins",
+      () => {
+        onUpdateState((prev) => {
+          const prevArcade = prev.arcade || {
+            lastFreeSpinDate: "",
+            dailyCasinoSpinsLeft: 3,
+            lastSpinResetDate: todayStr,
+            totalSpins: 0,
+            totalGamesPlayed: 0,
+            totalArcadeCoinsWon: 0,
+            biggestWin: 0
+          };
+          const baseLeft = prevArcade.lastSpinResetDate !== todayStr ? 3 : Math.max(0, prevArcade.dailyCasinoSpinsLeft ?? 0);
+          return {
+            ...prev,
+            arcade: {
+              ...prevArcade,
+              dailyCasinoSpinsLeft: baseLeft + 3,
+              lastSpinResetDate: todayStr
+            }
+          };
+        });
+        soundManager.playSound("upgrade", state.settings.soundFx);
+        triggerConfetti({ particleCount: 40, spread: 55, origin: { y: 0.45 } });
+        notify("+3 Casino Spins unlocked!", "win");
+        onAddFloatingText == null ? void 0 : onAddFloatingText("+3 Casino Spins", window.innerWidth / 2, window.innerHeight * 0.36, "#7C3AED");
+      },
+      "Unlock +3 Casino Spins"
+    );
+  };
+  const recordArcadeWin = (coinsWon, isSpin = false) => {
+    onUpdateState((prev) => {
+      const prevArcade = prev.arcade || {
+        lastFreeSpinDate: "",
+        dailyCasinoSpinsLeft: 3,
+        lastSpinResetDate: todayStr,
+        totalSpins: 0,
+        totalGamesPlayed: 0,
+        totalArcadeCoinsWon: 0,
+        biggestWin: 0
+      };
+      const nextDaily = coinsWon > 0 ? recordDailyMissionProgress(prev.dailyState, "earn_coins", coinsWon) : prev.dailyState;
+      return {
+        ...prev,
+        coins: prev.coins + coinsWon,
+        dailyState: nextDaily,
+        stats: {
+          ...prev.stats,
+          totalCoinsEarned: prev.stats.totalCoinsEarned + coinsWon
+        },
+        arcade: {
+          ...prevArcade,
+          totalSpins: prevArcade.totalSpins + (isSpin ? 1 : 0),
+          totalGamesPlayed: prevArcade.totalGamesPlayed + 1,
+          totalArcadeCoinsWon: prevArcade.totalArcadeCoinsWon + coinsWon,
+          biggestWin: Math.max(prevArcade.biggestWin || 0, coinsWon)
+        }
+      };
+    });
+  };
+  const pickWeightedSliceIndex = () => {
+    const total = WHEEL_WEIGHTS.reduce((a, b) => a + b, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < WHEEL_WEIGHTS.length; i++) {
+      r -= WHEEL_WEIGHTS[i];
+      if (r <= 0) return i;
+    }
+    return 0;
+  };
+  const executeWheelSpin = (mode) => {
+    if (isWheelSpinning) return;
+    if (mode !== "ad" && nonAdSpinsLeft <= 0) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify("0 Casino spins left without ads! Watch an ad to unlock +3 Spins.", "error");
+      handleWatchAdForSpins();
+      return;
+    }
+    const coinCost = 150;
+    if (mode === "coins" && state.coins < coinCost) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${coinCost} Coins for a spin, or watch a short ad for a free spin!`, "error");
+      return;
+    }
+    if (mode === "coins") {
+      onUpdateState((prev) => {
+        var _a2, _b2;
+        const curSpins = ((_a2 = prev.arcade) == null ? void 0 : _a2.lastSpinResetDate) !== todayStr ? 3 : Math.max(0, ((_b2 = prev.arcade) == null ? void 0 : _b2.dailyCasinoSpinsLeft) ?? 0);
+        if (prev.coins < coinCost || curSpins <= 0) return prev;
+        return {
+          ...prev,
+          coins: prev.coins - coinCost,
+          arcade: {
+            ...prev.arcade,
+            dailyCasinoSpinsLeft: curSpins - 1,
+            lastSpinResetDate: todayStr
+          }
+        };
+      });
+    } else if (mode === "free_daily") {
+      onUpdateState((prev) => {
+        var _a2, _b2;
+        const curSpins = ((_a2 = prev.arcade) == null ? void 0 : _a2.lastSpinResetDate) !== todayStr ? 3 : Math.max(0, ((_b2 = prev.arcade) == null ? void 0 : _b2.dailyCasinoSpinsLeft) ?? 0);
+        if (curSpins <= 0) return prev;
+        return {
+          ...prev,
+          arcade: {
+            ...prev.arcade,
+            lastFreeSpinDate: todayStr,
+            dailyCasinoSpinsLeft: curSpins - 1,
+            lastSpinResetDate: todayStr
+          }
+        };
+      });
+    }
+    setIsWheelSpinning(true);
+    soundManager.playSound("click", state.settings.soundFx);
+    notify("Spinning the Lucky Draw Wheel...", "info");
+    const winIndex = pickWeightedSliceIndex();
+    const slice = WHEEL_SLICES[winIndex];
+    const sliceAngle = 360 / WHEEL_SLICES.length;
+    const centerOfSlice = winIndex * sliceAngle + sliceAngle / 2;
+    const targetMod = (360 - centerOfSlice) % 360;
+    const currentMod = (wheelRotation % 360 + 360) % 360;
+    const deltaMod = (targetMod - currentMod + 360) % 360;
+    const nextRot = wheelRotation + 5 * 360 + deltaMod;
+    setWheelRotation(nextRot);
+    scheduleTimer(() => {
+      setIsWheelSpinning(false);
+      if (slice.rewardType === "coins") {
+        recordArcadeWin(slice.amount, true);
+        soundManager.playSound(slice.amount >= 700 ? "upgrade" : "coin", state.settings.soundFx);
+        triggerConfetti({ particleCount: slice.amount >= 700 ? 75 : 40, spread: 70, origin: { y: 0.45 } });
+        notify(`Wheel Won: ${slice.label}!`, "win");
+        onAddFloatingText == null ? void 0 : onAddFloatingText(slice.label, window.innerWidth / 2, window.innerHeight * 0.42, "#D97706");
+      } else if (slice.rewardType === "gems") {
+        onUpdateState((prev) => {
+          var _a2, _b2;
+          return {
+            ...prev,
+            gems: prev.gems + slice.amount,
+            arcade: {
+              ...prev.arcade,
+              totalSpins: (((_a2 = prev.arcade) == null ? void 0 : _a2.totalSpins) || 0) + 1,
+              totalGamesPlayed: (((_b2 = prev.arcade) == null ? void 0 : _b2.totalGamesPlayed) || 0) + 1
+            }
+          };
+        });
+        soundManager.playSound("upgrade", state.settings.soundFx);
+        triggerConfetti({ particleCount: 50, spread: 60, origin: { y: 0.45 } });
+        notify(`Wheel Won: ${slice.label}!`, "win");
+        onAddFloatingText == null ? void 0 : onAddFloatingText(slice.label, window.innerWidth / 2, window.innerHeight * 0.42, "#0284C7");
+      } else if (slice.rewardType === "energy") {
+        onUpdateState((prev) => {
+          var _a2, _b2;
+          return {
+            ...prev,
+            energy: Math.min(prev.maxEnergy, prev.energy + slice.amount),
+            arcade: {
+              ...prev.arcade,
+              totalSpins: (((_a2 = prev.arcade) == null ? void 0 : _a2.totalSpins) || 0) + 1,
+              totalGamesPlayed: (((_b2 = prev.arcade) == null ? void 0 : _b2.totalGamesPlayed) || 0) + 1
+            }
+          };
+        });
+        soundManager.playSound("coin", state.settings.soundFx);
+        triggerConfetti({ particleCount: 35, spread: 50, origin: { y: 0.45 } });
+        notify(`Wheel Won: ${slice.label}!`, "win");
+        onAddFloatingText == null ? void 0 : onAddFloatingText(slice.label, window.innerWidth / 2, window.innerHeight * 0.42, "#059669");
+      } else if (slice.rewardType === "consumable") {
+        onUpdateState((prev) => {
+          var _a2, _b2, _c2;
+          const def = CONSUMABLE_DEFINITIONS.energy_cell;
+          const cur = ((_a2 = prev.consumables) == null ? void 0 : _a2.energy_cell) || 0;
+          return {
+            ...prev,
+            consumables: {
+              ...prev.consumables,
+              energy_cell: Math.min(def.maxStock, cur + 1)
+            },
+            arcade: {
+              ...prev.arcade,
+              totalSpins: (((_b2 = prev.arcade) == null ? void 0 : _b2.totalSpins) || 0) + 1,
+              totalGamesPlayed: (((_c2 = prev.arcade) == null ? void 0 : _c2.totalGamesPlayed) || 0) + 1
+            }
+          };
+        });
+        soundManager.playSound("upgrade", state.settings.soundFx);
+        triggerConfetti({ particleCount: 40, spread: 55, origin: { y: 0.45 } });
+        notify(`Wheel Won: ${slice.label}!`, "win");
+      } else if (slice.rewardType === "part") {
+        const cats = ["wood", "metal", "tech", "gem"];
+        const cat = cats[Math.floor(Math.random() * cats.length)];
+        const partDef = getItemDef(cat, 3);
+        onUpdateState((prev) => {
+          var _a2, _b2, _c2, _d2;
+          const nextBoard = [...prev.board];
+          const nextInv = [...prev.inventory];
+          const newItem = {
+            id: `whl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            tier: 3,
+            category: cat
+          };
+          const emptyIdx = nextBoard.findIndex((c) => c.item === null);
+          if (emptyIdx !== -1) {
+            nextBoard[emptyIdx] = { ...nextBoard[emptyIdx], item: newItem };
+          } else if (nextInv.length < prev.maxInventoryCapacity) {
+            nextInv.push(newItem);
+          } else {
+            return {
+              ...prev,
+              coins: prev.coins + 200,
+              arcade: {
+                ...prev.arcade,
+                totalSpins: (((_a2 = prev.arcade) == null ? void 0 : _a2.totalSpins) || 0) + 1,
+                totalGamesPlayed: (((_b2 = prev.arcade) == null ? void 0 : _b2.totalGamesPlayed) || 0) + 1
+              }
+            };
+          }
+          return {
+            ...prev,
+            board: nextBoard,
+            inventory: nextInv,
+            arcade: {
+              ...prev.arcade,
+              totalSpins: (((_c2 = prev.arcade) == null ? void 0 : _c2.totalSpins) || 0) + 1,
+              totalGamesPlayed: (((_d2 = prev.arcade) == null ? void 0 : _d2.totalGamesPlayed) || 0) + 1
+            }
+          };
+        });
+        soundManager.playSound("upgrade", state.settings.soundFx);
+        triggerConfetti({ particleCount: 45, spread: 60, origin: { y: 0.45 } });
+        notify(`Wheel Won: T3 ${partDef.name}!`, "win");
+      }
+    }, 3100);
+  };
+  const handleSpinSlots = () => {
+    if (isSlotSpinning) return;
+    if (nonAdSpinsLeft <= 0) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify("0 Casino spins left without ads! Watch an ad to unlock +3 Spins.", "error");
+      handleWatchAdForSpins();
+      return;
+    }
+    if (state.coins < slotStake) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${slotStake.toLocaleString()} Coins to spin.`, "error");
+      return;
+    }
+    onUpdateState((prev) => {
+      var _a2, _b2;
+      const curSpins = ((_a2 = prev.arcade) == null ? void 0 : _a2.lastSpinResetDate) !== todayStr ? 3 : Math.max(0, ((_b2 = prev.arcade) == null ? void 0 : _b2.dailyCasinoSpinsLeft) ?? 0);
+      if (prev.coins < slotStake || curSpins <= 0) return prev;
+      return {
+        ...prev,
+        coins: prev.coins - slotStake,
+        arcade: {
+          ...prev.arcade,
+          dailyCasinoSpinsLeft: curSpins - 1,
+          lastSpinResetDate: todayStr
+        }
+      };
+    });
+    soundManager.playSound("click", state.settings.soundFx);
+    setIsSlotSpinning(true);
+    setSlotLastResult("Reels spinning...");
+    const rollReel = () => {
+      const weights = [27, 27, 20, 13, 8, 5];
+      const total = weights.reduce((a, b) => a + b, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < weights.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return i;
+      }
+      return 0;
+    };
+    const finalReels = [rollReel(), rollReel(), rollReel()];
+    const spinTick = window.setInterval(() => {
+      setReels([
+        Math.floor(Math.random() * SLOT_SYMBOLS.length),
+        Math.floor(Math.random() * SLOT_SYMBOLS.length),
+        Math.floor(Math.random() * SLOT_SYMBOLS.length)
+      ]);
+    }, 90);
+    scheduleTimer(() => {
+      window.clearInterval(spinTick);
+      setReels(finalReels);
+      setIsSlotSpinning(false);
+      const [a, b, c] = finalReels;
+      let winCoins = 0;
+      let bonusGems = 0;
+      let msg = "No match this spin — try again!";
+      if (a === b && b === c) {
+        const sym = SLOT_SYMBOLS[a];
+        winCoins = slotStake * sym.mult3;
+        if (a === 4) bonusGems = 1;
+        if (a === 5) bonusGems = 2;
+        msg = `JACKPOT! 3× ${sym.icon} paid +${winCoins.toLocaleString()} Coins${bonusGems > 0 ? ` & +${bonusGems} Scarce Gem${bonusGems > 1 ? "s" : ""}` : ""}!`;
+      } else if (a === b || b === c || a === c) {
+        winCoins = Math.round(slotStake * 1.6);
+        msg = `Double Match! Paid +${winCoins.toLocaleString()} Coins`;
+      }
+      if (winCoins > 0) {
+        recordArcadeWin(winCoins, true);
+        if (bonusGems > 0) {
+          onUpdateState((prev) => ({ ...prev, gems: prev.gems + bonusGems }));
+        }
+        soundManager.playSound(a === b && b === c ? "upgrade" : "coin", state.settings.soundFx);
+        triggerConfetti({ particleCount: a === b && b === c ? 70 : 30, spread: 60, origin: { y: 0.5 } });
+        notify(msg, "win");
+        onAddFloatingText == null ? void 0 : onAddFloatingText(`+${winCoins.toLocaleString()} Coins`, window.innerWidth / 2, window.innerHeight * 0.45, "#D97706");
+      } else {
+        onUpdateState((prev) => {
+          var _a2, _b2;
+          return {
+            ...prev,
+            arcade: {
+              ...prev.arcade,
+              totalSpins: (((_a2 = prev.arcade) == null ? void 0 : _a2.totalSpins) || 0) + 1,
+              totalGamesPlayed: (((_b2 = prev.arcade) == null ? void 0 : _b2.totalGamesPlayed) || 0) + 1
+            }
+          };
+        });
+        notify(msg, "info");
+      }
+      setSlotLastResult(msg);
+    }, 950);
+  };
+  const settleScratchTicket = (ticket) => {
+    if (ticket.settled) return;
+    const updatedTicket = { ...ticket, revealed: Array(9).fill(true), settled: true };
+    setScratchTicket(updatedTicket);
+    if (ticket.winTier) {
+      recordArcadeWin(ticket.winTier.coins);
+      if (ticket.winTier.gems > 0) {
+        onUpdateState((prev) => ({ ...prev, gems: prev.gems + ticket.winTier.gems }));
+      }
+      soundManager.playSound("upgrade", state.settings.soundFx);
+      triggerConfetti({ particleCount: 60, spread: 65, origin: { y: 0.5 } });
+      const msg = `3× ${ticket.winTier.icon} ${ticket.winTier.label}! Won +${ticket.winTier.coins.toLocaleString()} Coins${ticket.winTier.gems > 0 ? ` +${ticket.winTier.gems} Gem` : ""}!`;
+      notify(msg, "win");
+      onAddFloatingText == null ? void 0 : onAddFloatingText(`+${ticket.winTier.coins} Coins`, window.innerWidth / 2, window.innerHeight * 0.45, "#059669");
+    } else {
+      recordArcadeWin(100);
+      soundManager.playSound("coin", state.settings.soundFx);
+      notify("No triple match — Salvage Cashback +100 Coins!", "info");
+    }
+  };
+  const handleBuyScratchTicket = () => {
+    const cost = 250;
+    if (state.coins < cost) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${cost} Coins for a Scratch & Win Ticket.`, "error");
+      return;
+    }
+    onUpdateState((prev) => prev.coins < cost ? prev : { ...prev, coins: prev.coins - cost });
+    soundManager.playSound("click", state.settings.soundFx);
+    setScratchTicket(createScratchTicket());
+    notify("Tap foil tiles to scratch & match 3 identical symbols!", "info");
+  };
+  const handleScratchCell = (idx) => {
+    if (!scratchTicket || scratchTicket.settled || scratchTicket.revealed[idx]) return;
+    soundManager.playSound("click", state.settings.soundFx);
+    const nextRevealed = [...scratchTicket.revealed];
+    nextRevealed[idx] = true;
+    const nextTicket = { ...scratchTicket, revealed: nextRevealed };
+    setScratchTicket(nextTicket);
+    if (nextRevealed.every(Boolean)) {
+      settleScratchTicket(nextTicket);
+    }
+  };
+  const handleRollDice = (choice) => {
+    if (isDiceRolling) return;
+    if (state.coins < diceStake) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${diceStake.toLocaleString()} Coins to bet.`, "error");
+      return;
+    }
+    onUpdateState((prev) => prev.coins < diceStake ? prev : { ...prev, coins: prev.coins - diceStake });
+    soundManager.playSound("click", state.settings.soundFx);
+    setIsDiceRolling(true);
+    setDiceLastResult("Rolling the dice...");
+    scheduleTimer(() => {
+      const d1 = Math.floor(Math.random() * 6) + 1;
+      const d2 = Math.floor(Math.random() * 6) + 1;
+      const sum = d1 + d2;
+      setDiceValues([d1, d2]);
+      setIsDiceRolling(false);
+      const won = choice === "under" && sum < 7 || choice === "exact" && sum === 7 || choice === "over" && sum > 7;
+      if (won) {
+        const mult = choice === "exact" ? 4.5 : 2.1;
+        const winCoins = Math.round(diceStake * mult);
+        recordArcadeWin(winCoins);
+        soundManager.playSound(choice === "exact" ? "upgrade" : "coin", state.settings.soundFx);
+        triggerConfetti({ particleCount: choice === "exact" ? 60 : 30, spread: 55, origin: { y: 0.5 } });
+        const msg = `Rolled ${sum} (${d1}+${d2})! Won +${winCoins.toLocaleString()} Coins`;
+        setDiceLastResult(msg);
+        notify(msg, "win");
+        onAddFloatingText == null ? void 0 : onAddFloatingText(`+${winCoins.toLocaleString()} Coins`, window.innerWidth / 2, window.innerHeight * 0.45, "#059669");
+      } else {
+        onUpdateState((prev) => {
+          var _a2;
+          return {
+            ...prev,
+            arcade: {
+              ...prev.arcade,
+              totalGamesPlayed: (((_a2 = prev.arcade) == null ? void 0 : _a2.totalGamesPlayed) || 0) + 1
+            }
+          };
+        });
+        const msg = `Rolled ${sum} (${d1}+${d2}) — missed! Try another roll.`;
+        setDiceLastResult(msg);
+        notify(msg, "info");
+      }
+    }, 550);
+  };
+  const handlePickSafe = (idx, useFreeAd = false) => {
+    if (openedSafeIdx !== null) return;
+    const entryCost = 200;
+    if (!useFreeAd && state.coins < entryCost) {
+      soundManager.playSound("error", state.settings.soundFx);
+      notify(`Needs ${entryCost} Coins or watch an ad for a free Safe crack!`, "error");
+      return;
+    }
+    if (!useFreeAd) {
+      onUpdateState((prev) => prev.coins < entryCost ? prev : { ...prev, coins: prev.coins - entryCost });
+    }
+    const prize = shuffledSafes[idx];
+    setOpenedSafeIdx(idx);
+    if (prize.coins > 0) {
+      recordArcadeWin(prize.coins);
+    }
+    if (prize.gems > 0 || prize.energy > 0 || prize.consumable) {
+      onUpdateState((prev) => {
+        const nextConsumables = { ...prev.consumables };
+        if (prize.consumable) {
+          const def = CONSUMABLE_DEFINITIONS.tier_catalyst;
+          nextConsumables.tier_catalyst = Math.min(
+            def.maxStock,
+            (nextConsumables.tier_catalyst || 0) + 1
+          );
+        }
+        return {
+          ...prev,
+          gems: prev.gems + prize.gems,
+          energy: Math.min(prev.maxEnergy, prev.energy + prize.energy),
+          consumables: nextConsumables
+        };
+      });
+    }
+    soundManager.playSound(prize.tier === "grand" ? "upgrade" : "coin", state.settings.soundFx);
+    triggerConfetti({ particleCount: prize.tier === "grand" ? 65 : 30, spread: 60, origin: { y: 0.5 } });
+    notify(`Safe #${idx + 1} cracked: ${prize.label}!`, "win");
+    onAddFloatingText == null ? void 0 : onAddFloatingText(prize.label, window.innerWidth / 2, window.innerHeight * 0.45, "#7C3AED");
+  };
+  const handleResetSafes = () => {
+    setShuffledSafes([...SAFE_POOLS].sort(() => Math.random() - 0.5));
+    setOpenedSafeIdx(null);
+    setSafeRoundId((r) => r + 1);
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3.5 max-w-md mx-auto p-3 select-none text-slate-900 pb-14", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-r from-amber-50 via-white to-rose-50 border border-amber-300 rounded-2xl p-4 shadow-sm flex flex-col gap-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-between gap-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h2", { className: "text-base font-extrabold text-slate-900 flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Dices, { className: "w-4 h-4 text-rose-600" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Factory Arcade & Casino" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-0.5", children: "Spend earned Coins on Wheel, Slots, Scratch Cards, Dice & Safes!" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-2 text-center tabular-nums", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-amber-200 rounded-xl p-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs font-extrabold text-amber-700 flex items-center justify-center gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-3.5 h-3.5 text-amber-500" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: state.coins.toLocaleString() })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500 font-semibold", children: "Your Coins" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-rose-200 rounded-xl p-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs font-extrabold text-rose-700 flex items-center justify-center gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Trophy, { className: "w-3.5 h-3.5 text-rose-500" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: (((_d = state.arcade) == null ? void 0 : _d.biggestWin) || 0).toLocaleString() })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500 font-semibold", children: "Best Win" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-indigo-200 rounded-xl p-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs font-extrabold text-indigo-700", children: (((_e = state.arcade) == null ? void 0 : _e.totalGamesPlayed) || 0).toLocaleString() }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-500 font-semibold", children: "Plays" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "div",
+        {
+          className: `rounded-xl p-2.5 border flex items-center justify-between gap-2 ${nonAdSpinsLeft > 0 ? "bg-emerald-50/80 border-emerald-200" : "bg-rose-50 border-rose-300"}`,
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-[11px] font-extrabold text-slate-900 flex items-center gap-1.5 tabular-nums", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Casino Spins Left:" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: nonAdSpinsLeft > 0 ? "text-emerald-700" : "text-rose-700", children: [
+                  nonAdSpinsLeft,
+                  " / 3"
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+                [0, 1, 2].map((idx) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "span",
+                  {
+                    className: `w-4 h-2 rounded-full ${idx < nonAdSpinsLeft ? "bg-emerald-500" : "bg-slate-300"}`
+                  },
+                  idx
+                )),
+                nonAdSpinsLeft > 3 && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[10px] font-extrabold text-violet-700 ml-1", children: [
+                  "+",
+                  nonAdSpinsLeft - 3,
+                  " Ad Bonus"
+                ] })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                onClick: handleWatchAdForSpins,
+                className: "px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-[11px] flex items-center gap-1 shadow-sm cursor-pointer active:scale-95 transition shrink-0",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "+3 Spins · Ad" })
+                ]
+              }
+            )
+          ]
+        }
+      )
+    ] }),
+    bannerMsg && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "div",
+      {
+        className: `text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-2 border shadow-sm ${bannerMsg.type === "win" ? "bg-emerald-50 border-emerald-300 text-emerald-900" : bannerMsg.type === "error" ? "bg-rose-50 border-rose-300 text-rose-800" : "bg-sky-50 border-sky-200 text-sky-900"}`,
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4 shrink-0 text-amber-500" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: bannerMsg.text })
+        ]
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-5 gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm", children: [
+      { id: "wheel", label: hasFreeDailySpin && nonAdSpinsLeft > 0 ? "Wheel!" : "Wheel" },
+      { id: "slots", label: "Slots" },
+      { id: "scratch", label: "Scratch" },
+      { id: "dice", label: "Dice" },
+      { id: "safes", label: "Safes" }
+    ].map((tab) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+      "button",
+      {
+        onClick: () => {
+          soundManager.playSound("click", state.settings.soundFx);
+          setGameTab(tab.id);
+        },
+        className: `py-2 px-1 rounded-lg text-[11px] font-bold transition cursor-pointer whitespace-nowrap truncate ${gameTab === tab.id ? "bg-gradient-to-r from-rose-500 to-amber-500 text-white shadow-sm" : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"}`,
+        children: tab.label
+      },
+      tab.id
+    )) }),
+    gameTab === "wheel" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-amber-200 rounded-3xl p-4 shadow-sm flex flex-col items-center gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-sm font-extrabold text-slate-900", children: "Lucky Draw Prize Wheel" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-500", children: "Uses 1 Casino Spin (limit 3 without ads) · Watch Ad anytime to spin or add +3 Spins" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative w-64 h-64 flex items-center justify-center", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute -top-2 z-20 w-0 h-0 border-l-[12px] border-l-transparent border-r-[12px] border-r-transparent border-t-[20px] border-t-rose-600 drop-shadow-md" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "div",
+          {
+            className: "w-60 h-60 rounded-full border-4 border-amber-400 shadow-xl overflow-hidden",
+            style: {
+              transform: `rotate(${wheelRotation}deg)`,
+              transition: "transform 3000ms cubic-bezier(0.16, 1, 0.3, 1)"
+            },
+            children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { viewBox: "0 0 200 200", className: "w-full h-full", children: [
+              WHEEL_SLICES.map((slice, idx) => {
+                const angle = 360 / WHEEL_SLICES.length;
+                const startDeg = idx * angle - 90;
+                const endDeg = startDeg + angle;
+                const startRad = startDeg * Math.PI / 180;
+                const endRad = endDeg * Math.PI / 180;
+                const x1 = 100 + 100 * Math.cos(startRad);
+                const y1 = 100 + 100 * Math.sin(startRad);
+                const x2 = 100 + 100 * Math.cos(endRad);
+                const y2 = 100 + 100 * Math.sin(endRad);
+                const midDeg = idx * angle + angle / 2;
+                return /* @__PURE__ */ jsxRuntimeExports.jsxs("g", { children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "path",
+                    {
+                      d: `M100,100 L${x1},${y1} A100,100 0 0,1 ${x2},${y2} Z`,
+                      fill: slice.color,
+                      stroke: "#FFFFFF",
+                      strokeWidth: "1.5"
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx(
+                    "text",
+                    {
+                      x: "100",
+                      y: "28",
+                      fill: slice.textColor,
+                      fontSize: "10",
+                      fontWeight: "800",
+                      textAnchor: "middle",
+                      transform: `rotate(${midDeg} 100 100)`,
+                      children: slice.short
+                    }
+                  )
+                ] }, slice.id);
+              }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "100", cy: "100", r: "18", fill: "#0F172A", stroke: "#FBBF24", strokeWidth: "3" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("text", { x: "100", y: "104", fill: "#FFFFFF", fontSize: "9", fontWeight: "800", textAnchor: "middle", children: "SPIN" })
+            ] })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 w-full", children: [
+        hasFreeDailySpin && nonAdSpinsLeft > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => executeWheelSpin("free_daily"),
+            disabled: isWheelSpinning,
+            className: "w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95 transition disabled:opacity-60",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isWheelSpinning ? "Spinning..." : "Claim Free Daily Spin (1 Spin)" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-2", children: [
+          nonAdSpinsLeft > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              onClick: () => executeWheelSpin("coins"),
+              disabled: isWheelSpinning,
+              className: "py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition tabular-nums disabled:opacity-60",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(RotateCw, { className: "w-3.5 h-3.5" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Spin · 150 Coins" })
+              ]
+            }
+          ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              onClick: handleWatchAdForSpins,
+              disabled: isWheelSpinning,
+              className: "py-2.5 px-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-[11px] flex items-center justify-center gap-1 shadow-sm cursor-pointer active:scale-95 transition disabled:opacity-60",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5 shrink-0" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "0 Left · +3 Spins Ad" })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "button",
+            {
+              onClick: () => onTriggerRewardedAd(
+                "arcade_spin",
+                () => executeWheelSpin("ad"),
+                "Free Lucky Wheel Spin"
+              ),
+              disabled: isWheelSpinning,
+              className: "py-2.5 px-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition disabled:opacity-60",
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-3.5 h-3.5" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Spin · Watch Ad" })
+              ]
+            }
+          )
+        ] })
+      ] })
+    ] }),
+    gameTab === "slots" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-indigo-200 rounded-3xl p-4 shadow-sm flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-between", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-sm font-extrabold text-slate-900", children: "Factory Jackpot Slots" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-500", children: "Uses 1 Casino Spin · Triple 7️⃣ pays 24x + 2 Scarce Gems" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-b from-slate-900 to-indigo-950 border-4 border-amber-400 rounded-2xl p-4 shadow-inner", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-2.5", children: reels.map((symbolIdx, i) => {
+          const sym = SLOT_SYMBOLS[symbolIdx] || SLOT_SYMBOLS[0];
+          return /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            "div",
+            {
+              className: `h-20 rounded-xl bg-white border-2 border-amber-200 flex flex-col items-center justify-center shadow-md ${isSlotSpinning ? "animate-pulse" : ""}`,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-3xl leading-none", children: sym.icon }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-bold text-slate-500 mt-1", children: sym.name })
+              ]
+            },
+            i
+          );
+        }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-center text-xs font-bold text-amber-300 mt-3 tabular-nums", children: slotLastResult })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-slate-600", children: "Select Coin Stake" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-4 gap-1.5", children: [50, 150, 500, 1500].map((amt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              soundManager.playSound("click", state.settings.soundFx);
+              setSlotStake(amt);
+            },
+            disabled: isSlotSpinning,
+            className: `py-2 rounded-xl font-extrabold text-xs border transition cursor-pointer tabular-nums ${slotStake === amt ? "bg-amber-400 border-amber-500 text-slate-950 shadow-xs" : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"}`,
+            children: amt
+          },
+          amt
+        )) })
+      ] }),
+      nonAdSpinsLeft > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: handleSpinSlots,
+          disabled: isSlotSpinning,
+          className: "w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95 transition tabular-nums disabled:opacity-60",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isSlotSpinning ? "Spinning..." : `Spin Slots (${slotStake.toLocaleString()} Coins · ${nonAdSpinsLeft} left)` })
+          ]
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: handleWatchAdForSpins,
+          disabled: isSlotSpinning,
+          className: "w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-rose-600 hover:from-violet-500 hover:to-rose-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95 transition",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "0 Spins Left · Watch Ad (+3 Spins)" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-slate-50 border border-slate-200 rounded-2xl p-3 grid grid-cols-3 gap-2 text-[11px] text-center tabular-nums", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "text-slate-900", children: "7️⃣7️⃣7️⃣" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-amber-700 font-bold", children: "24x + 2💎" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "text-slate-900", children: "💎💎💎" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-cyan-700 font-bold", children: "14x + 1💎" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { className: "text-slate-900", children: "Any 2×" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-emerald-700 font-bold", children: "1.6x Coins" })
+        ] })
+      ] })
+    ] }),
+    gameTab === "scratch" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-emerald-200 rounded-3xl p-4 shadow-sm flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-center justify-between gap-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "text-sm font-extrabold text-slate-900 flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Ticket, { className: "w-4 h-4 text-emerald-600" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Scratch & Win Factory Card" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-500", children: "250 Coins per ticket · Match 3 icons to win up to 2,000 Coins or 1 Scarce Gem!" })
+      ] }) }),
+      !scratchTicket ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-br from-emerald-50 to-amber-50 border-2 border-dashed border-emerald-300 rounded-2xl p-5 flex flex-col items-center gap-3 text-center", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-4xl", children: "🎫" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs font-bold text-slate-700", children: "Ready for a lucky shift ticket? Every non-matching ticket returns +100 Coins salvage!" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: handleBuyScratchTicket,
+            className: "w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95 transition tabular-nums",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Buy Scratch Ticket (250 Coins)" })
+            ]
+          }
+        )
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-2.5 bg-gradient-to-br from-amber-50 to-indigo-50 border-2 border-amber-300 rounded-2xl p-3", children: scratchTicket.cells.map((icon, idx) => {
+          var _a2;
+          const isRevealed = scratchTicket.revealed[idx];
+          const isWinningIcon = scratchTicket.settled && ((_a2 = scratchTicket.winTier) == null ? void 0 : _a2.icon) === icon;
+          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => handleScratchCell(idx),
+              disabled: isRevealed || scratchTicket.settled,
+              className: `h-20 rounded-xl border-2 flex flex-col items-center justify-center transition ${isRevealed ? isWinningIcon ? "bg-emerald-50 border-emerald-400 ring-2 ring-emerald-300 shadow-sm" : "bg-white border-slate-200" : "bg-gradient-to-br from-slate-300 via-slate-200 to-slate-400 border-slate-400 hover:brightness-105 cursor-pointer active:scale-95 shadow-inner"}`,
+              children: isRevealed ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-3xl leading-none", children: icon }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-black uppercase tracking-wider text-slate-700", children: "Scratch" })
+            },
+            idx
+          );
+        }) }),
+        !scratchTicket.settled ? /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => settleScratchTicket(scratchTicket),
+            className: "w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs cursor-pointer active:scale-95 transition shadow-sm",
+            children: "Reveal All Tiles"
+          }
+        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: handleBuyScratchTicket,
+            className: "w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition tabular-nums",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(RotateCw, { className: "w-4 h-4" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Buy Next Ticket (250 Coins)" })
+            ]
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-slate-50 border border-slate-200 rounded-2xl p-2.5 grid grid-cols-3 gap-2 text-[10px] text-center tabular-nums", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "3× 👑" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-amber-700 font-bold", children: "+2,000🪙" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "3× 💎" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-cyan-700 font-bold", children: "+1,200🪙 +1💎" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: "3× ⚡ / 🪵 / ⚙️" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-emerald-700 font-bold", children: "400–850🪙" })
+        ] })
+      ] })
+    ] }),
+    gameTab === "dice" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-sky-200 rounded-3xl p-4 shadow-sm flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-sm font-extrabold text-slate-900", children: "Lucky Dice High-Low" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-500", children: "Pick Under 7 (2.1x), Lucky 7 (4.5x), or Over 7 (2.1x)" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-gradient-to-br from-sky-50 to-indigo-50 border border-sky-200 rounded-2xl p-5 flex flex-col items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-center gap-5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DieFace, { value: diceValues[0], rolling: isDiceRolling }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DieFace, { value: diceValues[1], rolling: isDiceRolling })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs font-extrabold text-indigo-900 tabular-nums", children: [
+          "Total: ",
+          diceValues[0] + diceValues[1],
+          " · ",
+          diceLastResult
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-1.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-bold text-slate-600", children: "Select Coin Bet" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-4 gap-1.5", children: [50, 150, 500, 1e3].map((amt) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => {
+              soundManager.playSound("click", state.settings.soundFx);
+              setDiceStake(amt);
+            },
+            disabled: isDiceRolling,
+            className: `py-2 rounded-xl font-extrabold text-xs border transition cursor-pointer tabular-nums ${diceStake === amt ? "bg-sky-500 border-sky-600 text-white shadow-xs" : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"}`,
+            children: amt
+          },
+          amt
+        )) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-3 gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => handleRollDice("under"),
+            disabled: isDiceRolling,
+            className: "py-3 px-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs flex flex-col items-center cursor-pointer active:scale-95 transition disabled:opacity-60",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Under 7" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] opacity-90", children: "Pays 2.1x" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => handleRollDice("exact"),
+            disabled: isDiceRolling,
+            className: "py-3 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex flex-col items-center cursor-pointer active:scale-95 transition disabled:opacity-60",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Lucky 7" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px]", children: "Pays 4.5x" })
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            onClick: () => handleRollDice("over"),
+            disabled: isDiceRolling,
+            className: "py-3 px-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs flex flex-col items-center cursor-pointer active:scale-95 transition disabled:opacity-60",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Over 7" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] opacity-90", children: "Pays 2.1x" })
+            ]
+          }
+        )
+      ] })
+    ] }),
+    gameTab === "safes" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-violet-200 rounded-3xl p-4 shadow-sm flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-sm font-extrabold text-slate-900", children: "Vault Breaker Mystery Safes" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-[11px] text-slate-500", children: "Pick 1 of 3 armored safes (200 Coins) — every safe holds Coins, Gems, Energy, or Boosters!" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-3 gap-2.5", children: shuffledSafes.map((prize, idx) => {
+        const isRevealed = openedSafeIdx !== null;
+        const isPicked = openedSafeIdx === idx;
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: () => handlePickSafe(idx, false),
+            disabled: isRevealed,
+            className: `rounded-2xl p-3 border-2 flex flex-col items-center justify-center gap-2 min-h-[124px] text-center transition ${!isRevealed ? "bg-gradient-to-b from-slate-50 to-indigo-50 border-indigo-200 hover:border-amber-400 cursor-pointer active:scale-95 shadow-sm" : isPicked ? "bg-amber-50 border-amber-400 ring-2 ring-amber-300" : "bg-slate-50 border-slate-200 opacity-70"}`,
+            children: isRevealed ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                LockOpen,
+                {
+                  className: `w-6 h-6 ${prize.tier === "grand" ? "text-amber-600" : "text-emerald-600"}`
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] font-extrabold text-slate-900 leading-tight", children: prize.label }),
+              isPicked && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-bold text-amber-700", children: "Your Pick" })
+            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(ShieldCheck, { className: "w-8 h-8 text-indigo-600" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-extrabold text-slate-900", children: [
+                "Safe #",
+                idx + 1
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] font-bold text-amber-700", children: "200 Coins" })
+            ] })
+          },
+          idx
+        );
+      }) }, safeRoundId),
+      openedSafeIdx === null ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: () => onTriggerRewardedAd(
+            "arcade_safe",
+            () => {
+              const randomPick = Math.floor(Math.random() * 3);
+              handlePickSafe(randomPick, true);
+            },
+            "Free Mystery Safe Crack"
+          ),
+          className: "w-full py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Crack a Random Safe Free · Watch Ad" })
+          ]
+        }
+      ) : /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          onClick: handleResetSafes,
+          className: "w-full py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition",
+          children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(RotateCw, { className: "w-4 h-4" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Play Next Round" })
+          ]
+        }
+      )
+    ] })
   ] });
 };
 function usePWAInstall() {
@@ -20497,6 +23118,21 @@ async function probeInternetReachability() {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return false;
   }
+  let isNative = false;
+  try {
+    isNative = Capacitor.isNativePlatform();
+  } catch {
+    isNative = false;
+  }
+  let isIframePreview2 = false;
+  try {
+    isIframePreview2 = typeof window !== "undefined" && window.self !== window.top;
+  } catch {
+    isIframePreview2 = true;
+  }
+  if (!isNative && isIframePreview2) {
+    return true;
+  }
   const probe = async (url, timeoutMs = 4500) => {
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
@@ -20514,16 +23150,13 @@ async function probeInternetReachability() {
       if (timer) clearTimeout(timer);
     }
   };
-  if (Capacitor.isNativePlatform()) {
-    const firstTry = await probe("https://clients3.google.com/generate_204");
-    if (firstTry) return true;
-    return probe("https://www.google.com/generate_204");
-  }
-  return probe(`${window.location.origin}/?online_check=${Date.now()}`);
+  const firstTry = await probe("https://clients3.google.com/generate_204");
+  if (firstTry) return true;
+  return probe("https://www.google.com/generate_204");
 }
 function useOnlineStatus() {
   const [isOnline, setIsOnline] = reactExports.useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
+    typeof navigator !== "undefined" ? navigator.onLine !== false : true
   );
   const [isChecking, setIsChecking] = reactExports.useState(false);
   const recheckConnection = reactExports.useCallback(async () => {
@@ -20703,14 +23336,41 @@ const SettingsView = ({ state, onUpdateState, onResetGame, onBack }) => {
       };
     });
   };
-  const setBoardTheme = (boardTheme) => {
+  const [themeNotice, setThemeNotice] = reactExports.useState(null);
+  const unlockedThemes = state.unlockedThemes || ["amber", "emerald"];
+  const handleSelectOrBuyTheme = (boardTheme, unlockCoins, name) => {
+    const isUnlocked = unlockCoins === 0 || unlockedThemes.includes(boardTheme);
+    if (isUnlocked) {
+      onUpdateState((prev) => {
+        soundManager.playSound("click", prev.settings.soundFx);
+        return {
+          ...prev,
+          settings: { ...prev.settings, boardTheme }
+        };
+      });
+      setThemeNotice(null);
+      return;
+    }
+    if (state.coins < unlockCoins) {
+      soundManager.playSound("error", state.settings.soundFx);
+      setThemeNotice(`Needs ${unlockCoins.toLocaleString()} Coins to unlock ${name}.`);
+      setTimeout(() => setThemeNotice(null), 2600);
+      return;
+    }
     onUpdateState((prev) => {
-      soundManager.playSound("click", prev.settings.soundFx);
+      if (prev.coins < unlockCoins) return prev;
+      const curUnlocked = prev.unlockedThemes || ["amber", "emerald"];
+      if (curUnlocked.includes(boardTheme)) return prev;
+      soundManager.playSound("upgrade", prev.settings.soundFx);
       return {
         ...prev,
+        coins: prev.coins - unlockCoins,
+        unlockedThemes: [...curUnlocked, boardTheme],
         settings: { ...prev.settings, boardTheme }
       };
     });
+    setThemeNotice(`Unlocked & equipped ${name}!`);
+    setTimeout(() => setThemeNotice(null), 2600);
   };
   const setPlayMode = (playMode) => {
     onUpdateState((prev) => {
@@ -20751,12 +23411,6 @@ const SettingsView = ({ state, onUpdateState, onResetGame, onBack }) => {
       Icon: Rocket,
       activeStyle: "border-amber-400 bg-amber-50 text-amber-950"
     }
-  ];
-  const themeOptions = [
-    { id: "amber", name: "Sunny Amber", swatch: "bg-amber-400" },
-    { id: "emerald", name: "Fresh Mint", swatch: "bg-emerald-400" },
-    { id: "ocean", name: "Sky Cyan", swatch: "bg-sky-400" },
-    { id: "purple", name: "Lavender Bloom", swatch: "bg-violet-400" }
   ];
   const currentMode = ((_a = state.settings) == null ? void 0 : _a.playMode) || "standard";
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-3.5 max-w-md mx-auto p-3 select-none text-slate-900 pb-12", children: [
@@ -20815,24 +23469,38 @@ const SettingsView = ({ state, onUpdateState, onResetGame, onBack }) => {
       }) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-slate-200 rounded-2xl p-3.5 flex flex-col gap-3 shadow-sm", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "text-xs font-extrabold text-slate-800 flex items-center gap-1.5", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Palette, { className: "w-4 h-4 text-amber-500" }),
-        " Workshop Board Theme"
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "text-xs font-extrabold text-slate-800 flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Palette, { className: "w-4 h-4 text-amber-500" }),
+          " Workshop Board Theme"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-[11px] font-bold text-amber-700 tabular-nums flex items-center gap-1", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-3.5 h-3.5 text-amber-500" }),
+          state.coins.toLocaleString()
+        ] })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 gap-2", children: themeOptions.map((theme) => {
+      themeNotice && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900", children: themeNotice }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-1 gap-2", children: BOARD_THEME_CATALOG.map((theme) => {
         var _a2;
+        const isUnlocked = theme.unlockCoins === 0 || unlockedThemes.includes(theme.id);
         const isSelected = (((_a2 = state.settings) == null ? void 0 : _a2.boardTheme) || "amber") === theme.id;
         return /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "button",
           {
-            onClick: () => setBoardTheme(theme.id),
-            className: `p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition cursor-pointer ${isSelected ? "border-amber-400 bg-amber-50 text-amber-950 shadow-sm" : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"}`,
+            onClick: () => handleSelectOrBuyTheme(theme.id, theme.unlockCoins, theme.name),
+            className: `p-2.5 rounded-xl border text-xs font-bold flex items-center justify-between transition cursor-pointer ${isSelected ? "border-amber-400 bg-amber-50 text-amber-950 shadow-sm" : isUnlocked ? "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100" : "border-indigo-200 bg-indigo-50/40 text-slate-800 hover:bg-indigo-50"}`,
             children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `w-3.5 h-3.5 rounded-full ${theme.swatch} border border-white shadow-sm` }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: theme.name })
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2.5", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `w-4 h-4 rounded-full ${theme.swatch} border border-white shadow-sm` }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-left", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: theme.name }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10px] font-medium text-slate-500", children: theme.tagline })
+                ] })
               ] }),
-              isSelected && /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "w-3.5 h-3.5 text-amber-600" })
+              isSelected ? /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "w-4 h-4 text-amber-600" }) : isUnlocked ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[11px] text-slate-500 font-semibold", children: "Equip" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "px-2 py-1 rounded-lg bg-amber-400 text-slate-950 font-extrabold text-[11px] flex items-center gap-1 tabular-nums", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Lock, { className: "w-3 h-3" }),
+                theme.unlockCoins.toLocaleString()
+              ] })
             ]
           },
           theme.id
@@ -20996,7 +23664,10 @@ const SettingsView = ({ state, onUpdateState, onResetGame, onBack }) => {
           {
             onClick: () => {
               resetGameSave();
-              localStorage.removeItem("idle_factory_shop_daily_gift");
+              try {
+                localStorage.removeItem("idle_factory_shop_daily_gift");
+              } catch {
+              }
               setConfirmReset(false);
               onResetGame();
             },
@@ -21079,7 +23750,7 @@ const OfflineModal = ({
   const minutes = Math.floor(seconds % 3600 / 60);
   const handleDoubleReward = () => {
     onTriggerRewardedAd("double_earnings", () => {
-      confetti({ particleCount: 55, spread: 70, origin: { y: 0.5 } });
+      triggerConfetti({ particleCount: 55, spread: 70, origin: { y: 0.5 } });
       onClaim(true);
     });
   };
@@ -21138,350 +23809,57 @@ const OfflineModal = ({
     ] })
   ] }) });
 };
-var NativeAdTemplate;
-(function(NativeAdTemplate2) {
-  NativeAdTemplate2["Small"] = "small";
-  NativeAdTemplate2["Medium"] = "medium";
-})(NativeAdTemplate || (NativeAdTemplate = {}));
-var MaxAdContentRating;
-(function(MaxAdContentRating2) {
-  MaxAdContentRating2["General"] = "General";
-  MaxAdContentRating2["ParentalGuidance"] = "ParentalGuidance";
-  MaxAdContentRating2["Teen"] = "Teen";
-  MaxAdContentRating2["MatureAudience"] = "MatureAudience";
-})(MaxAdContentRating || (MaxAdContentRating = {}));
-var BannerAdPluginEvents;
-(function(BannerAdPluginEvents2) {
-  BannerAdPluginEvents2["SizeChanged"] = "bannerAdSizeChanged";
-  BannerAdPluginEvents2["Loaded"] = "bannerAdLoaded";
-  BannerAdPluginEvents2["FailedToLoad"] = "bannerAdFailedToLoad";
-  BannerAdPluginEvents2["Opened"] = "bannerAdOpened";
-  BannerAdPluginEvents2["Closed"] = "bannerAdClosed";
-  BannerAdPluginEvents2["AdImpression"] = "bannerAdImpression";
-  BannerAdPluginEvents2["AdPaid"] = "bannerAdPaid";
-})(BannerAdPluginEvents || (BannerAdPluginEvents = {}));
-var BannerAdPosition;
-(function(BannerAdPosition2) {
-  BannerAdPosition2["TOP_CENTER"] = "TOP_CENTER";
-  BannerAdPosition2["CENTER"] = "CENTER";
-  BannerAdPosition2["BOTTOM_CENTER"] = "BOTTOM_CENTER";
-})(BannerAdPosition || (BannerAdPosition = {}));
-var BannerAdSize;
-(function(BannerAdSize2) {
-  BannerAdSize2["BANNER"] = "BANNER";
-  BannerAdSize2["FULL_BANNER"] = "FULL_BANNER";
-  BannerAdSize2["LARGE_BANNER"] = "LARGE_BANNER";
-  BannerAdSize2["MEDIUM_RECTANGLE"] = "MEDIUM_RECTANGLE";
-  BannerAdSize2["LEADERBOARD"] = "LEADERBOARD";
-  BannerAdSize2["ADAPTIVE_BANNER"] = "ADAPTIVE_BANNER";
-  BannerAdSize2["SMART_BANNER"] = "SMART_BANNER";
-})(BannerAdSize || (BannerAdSize = {}));
-var InterstitialAdPluginEvents;
-(function(InterstitialAdPluginEvents2) {
-  InterstitialAdPluginEvents2["Loaded"] = "interstitialAdLoaded";
-  InterstitialAdPluginEvents2["FailedToLoad"] = "interstitialAdFailedToLoad";
-  InterstitialAdPluginEvents2["Showed"] = "interstitialAdShowed";
-  InterstitialAdPluginEvents2["FailedToShow"] = "interstitialAdFailedToShow";
-  InterstitialAdPluginEvents2["Dismissed"] = "interstitialAdDismissed";
-  InterstitialAdPluginEvents2["AdImpression"] = "interstitialAdImpression";
-})(InterstitialAdPluginEvents || (InterstitialAdPluginEvents = {}));
-var RewardInterstitialAdPluginEvents;
-(function(RewardInterstitialAdPluginEvents2) {
-  RewardInterstitialAdPluginEvents2["Loaded"] = "onRewardedInterstitialAdLoaded";
-  RewardInterstitialAdPluginEvents2["FailedToLoad"] = "onRewardedInterstitialAdFailedToLoad";
-  RewardInterstitialAdPluginEvents2["Showed"] = "onRewardedInterstitialAdShowed";
-  RewardInterstitialAdPluginEvents2["FailedToShow"] = "onRewardedInterstitialAdFailedToShow";
-  RewardInterstitialAdPluginEvents2["Dismissed"] = "onRewardedInterstitialAdDismissed";
-  RewardInterstitialAdPluginEvents2["Rewarded"] = "onRewardedInterstitialAdReward";
-  RewardInterstitialAdPluginEvents2["AdImpression"] = "onRewardedInterstitialAdImpression";
-})(RewardInterstitialAdPluginEvents || (RewardInterstitialAdPluginEvents = {}));
-var RewardAdPluginEvents;
-(function(RewardAdPluginEvents2) {
-  RewardAdPluginEvents2["adClicked"] = "onRewardedVideoAdClicked";
-  RewardAdPluginEvents2["Loaded"] = "onRewardedVideoAdLoaded";
-  RewardAdPluginEvents2["FailedToLoad"] = "onRewardedVideoAdFailedToLoad";
-  RewardAdPluginEvents2["Showed"] = "onRewardedVideoAdShowed";
-  RewardAdPluginEvents2["FailedToShow"] = "onRewardedVideoAdFailedToShow";
-  RewardAdPluginEvents2["Dismissed"] = "onRewardedVideoAdDismissed";
-  RewardAdPluginEvents2["Rewarded"] = "onRewardedVideoAdReward";
-  RewardAdPluginEvents2["AdImpression"] = "onRewardedVideoAdImpression";
-})(RewardAdPluginEvents || (RewardAdPluginEvents = {}));
-var AdmobConsentStatus;
-(function(AdmobConsentStatus2) {
-  AdmobConsentStatus2["NOT_REQUIRED"] = "NOT_REQUIRED";
-  AdmobConsentStatus2["OBTAINED"] = "OBTAINED";
-  AdmobConsentStatus2["REQUIRED"] = "REQUIRED";
-  AdmobConsentStatus2["UNKNOWN"] = "UNKNOWN";
-})(AdmobConsentStatus || (AdmobConsentStatus = {}));
-var AdmobConsentDebugGeography;
-(function(AdmobConsentDebugGeography2) {
-  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["DISABLED"] = 0] = "DISABLED";
-  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["EEA"] = 1] = "EEA";
-  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["NOT_EEA"] = 2] = "NOT_EEA";
-  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["US"] = 3] = "US";
-  AdmobConsentDebugGeography2[AdmobConsentDebugGeography2["OTHER"] = 4] = "OTHER";
-})(AdmobConsentDebugGeography || (AdmobConsentDebugGeography = {}));
-var AdValuePrecision;
-(function(AdValuePrecision2) {
-  AdValuePrecision2[AdValuePrecision2["Unknown"] = 0] = "Unknown";
-  AdValuePrecision2[AdValuePrecision2["Estimated"] = 1] = "Estimated";
-  AdValuePrecision2[AdValuePrecision2["PublisherProvided"] = 2] = "PublisherProvided";
-  AdValuePrecision2[AdValuePrecision2["Precise"] = 3] = "Precise";
-})(AdValuePrecision || (AdValuePrecision = {}));
-var AppOpenAdPluginEvents;
-(function(AppOpenAdPluginEvents2) {
-  AppOpenAdPluginEvents2["Loaded"] = "appOpenAdLoaded";
-  AppOpenAdPluginEvents2["FailedToLoad"] = "appOpenAdFailedToLoad";
-  AppOpenAdPluginEvents2["Opened"] = "appOpenAdOpened";
-  AppOpenAdPluginEvents2["Closed"] = "appOpenAdClosed";
-  AppOpenAdPluginEvents2["FailedToShow"] = "appOpenAdFailedToShow";
-  AppOpenAdPluginEvents2["AdImpression"] = "appOpenAdImpression";
-})(AppOpenAdPluginEvents || (AppOpenAdPluginEvents = {}));
-var NativeAdPluginEvents;
-(function(NativeAdPluginEvents2) {
-  NativeAdPluginEvents2["Loaded"] = "nativeAdLoaded";
-  NativeAdPluginEvents2["FailedToLoad"] = "nativeAdFailedToLoad";
-  NativeAdPluginEvents2["Clicked"] = "nativeAdClicked";
-  NativeAdPluginEvents2["AdImpression"] = "nativeAdImpression";
-  NativeAdPluginEvents2["Opened"] = "nativeAdOpened";
-  NativeAdPluginEvents2["Closed"] = "nativeAdClosed";
-  NativeAdPluginEvents2["AdPaid"] = "nativeAdPaid";
-})(NativeAdPluginEvents || (NativeAdPluginEvents = {}));
-const nativeAdBridge = registerPlugin("AdMob", {
-  web: () => __vitePreload(() => import("./web-DkPcjkTu.js"), true ? [] : void 0).then((m) => new m.AdMobWeb())
-});
-const AdMob = nativeAdBridge;
-const ADMOB_CONFIG = {
-  appId: "ca-app-pub-7953133690157762~2151559499",
-  rewardedAdUnitId: "ca-app-pub-7953133690157762/9569517536",
-  interstitialAdUnitId: "ca-app-pub-7953133690157762/5330889623"
-};
-const IS_TEST_MODE = false;
-let initPromise = null;
-let rewardedLoadPromise = null;
-let interstitialLoadPromise = null;
-let preparedRewardedUnitId = null;
-let preparedInterstitialUnitId = null;
-function isNativeAdMob() {
-  try {
-    return Capacitor.isNativePlatform();
-  } catch {
-    return false;
-  }
-}
-async function initAdMob() {
-  if (!isNativeAdMob()) return;
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    try {
-      await AdMob.initialize({
-        initializeForTesting: IS_TEST_MODE
-      });
-      try {
-        const consentInfo = await Promise.race([
-          AdMob.requestConsentInfo(),
-          new Promise((resolve) => setTimeout(() => resolve(null), 3e3))
-        ]);
-        if (consentInfo && consentInfo.isConsentFormAvailable && consentInfo.status === AdmobConsentStatus.REQUIRED) {
-          await AdMob.showConsentForm();
-        }
-      } catch (consentErr) {
-        console.warn("AdMob UMP consent check skipped:", consentErr);
-      }
-      void preloadRewardedAd();
-      void preloadInterstitialAd();
-    } catch (err) {
-      initPromise = null;
-      console.warn("AdMob initialization error:", err);
-    }
-  })();
-  return initPromise;
-}
-let lastRewardedLoadError = null;
-async function preloadRewardedAd() {
-  if (!isNativeAdMob()) return null;
-  if (preparedRewardedUnitId) return preparedRewardedUnitId;
-  if (rewardedLoadPromise) return rewardedLoadPromise;
-  rewardedLoadPromise = (async () => {
-    try {
-      await initAdMob();
-      const info = await AdMob.prepareRewardVideoAd({
-        adId: ADMOB_CONFIG.rewardedAdUnitId,
-        isTesting: IS_TEST_MODE,
-        immersiveMode: true
-      });
-      preparedRewardedUnitId = (info == null ? void 0 : info.adUnitId) || ADMOB_CONFIG.rewardedAdUnitId;
-      lastRewardedLoadError = null;
-      return preparedRewardedUnitId;
-    } catch (err) {
-      preparedRewardedUnitId = null;
-      const errObj = err;
-      lastRewardedLoadError = (errObj == null ? void 0 : errObj.message) || "Unable to load ad from AdMob.";
-      console.warn("Rewarded ad preload failed:", err);
-      return null;
-    } finally {
-      rewardedLoadPromise = null;
-    }
-  })();
-  return rewardedLoadPromise;
-}
-async function preloadInterstitialAd() {
-  if (!isNativeAdMob()) return null;
-  if (preparedInterstitialUnitId) return preparedInterstitialUnitId;
-  if (interstitialLoadPromise) return interstitialLoadPromise;
-  interstitialLoadPromise = (async () => {
-    try {
-      await initAdMob();
-      const info = await AdMob.prepareInterstitial({
-        adId: ADMOB_CONFIG.interstitialAdUnitId,
-        isTesting: IS_TEST_MODE,
-        immersiveMode: true
-      });
-      preparedInterstitialUnitId = (info == null ? void 0 : info.adUnitId) || ADMOB_CONFIG.interstitialAdUnitId;
-      return preparedInterstitialUnitId;
-    } catch (err) {
-      preparedInterstitialUnitId = null;
-      console.warn("Interstitial ad preload failed:", err);
-      return null;
-    } finally {
-      interstitialLoadPromise = null;
-    }
-  })();
-  return interstitialLoadPromise;
-}
-async function showNativeRewardedAd() {
-  if (!isNativeAdMob()) {
-    return { completed: false, error: "Not running in native Android app" };
-  }
-  await initAdMob();
-  let unitIdToShow = preparedRewardedUnitId;
-  if (!unitIdToShow) {
-    unitIdToShow = await preloadRewardedAd();
-    if (!unitIdToShow) {
-      return {
-        completed: false,
-        error: lastRewardedLoadError || "Ad could not be loaded yet. Check your internet connection and tap Try Again."
-      };
-    }
-  }
-  preparedRewardedUnitId = null;
-  let dismissedHandle = null;
-  let failedHandle = null;
-  let dismissedPromiseResolve = null;
-  const dismissedPromise = new Promise((resolve) => {
-    dismissedPromiseResolve = resolve;
-  });
-  try {
-    dismissedHandle = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-      dismissedPromiseResolve == null ? void 0 : dismissedPromiseResolve();
-    });
-    failedHandle = await AdMob.addListener(RewardAdPluginEvents.FailedToShow, () => {
-      dismissedPromiseResolve == null ? void 0 : dismissedPromiseResolve();
-    });
-    await AdMob.showRewardVideoAd({
-      adId: unitIdToShow
-    });
-    await Promise.race([
-      dismissedPromise,
-      new Promise((resolve) => setTimeout(resolve, 600))
-    ]);
-    void preloadRewardedAd();
-    return { completed: true };
-  } catch (err) {
-    const errObj = err;
-    const isCancelled = (errObj == null ? void 0 : errObj.code) === "REWARDED_AD_CANCELLED" || typeof (errObj == null ? void 0 : errObj.message) === "string" && errObj.message.toLowerCase().includes("dismissed");
-    void preloadRewardedAd();
-    if (isCancelled) {
-      return {
-        completed: false,
-        cancelled: true,
-        error: "Watch the full ad to claim your reward."
-      };
-    }
-    return {
-      completed: false,
-      error: (errObj == null ? void 0 : errObj.message) || "Unable to show ad right now. Please try again."
-    };
-  } finally {
-    await (dismissedHandle == null ? void 0 : dismissedHandle.remove().catch(() => {
-    }));
-    await (failedHandle == null ? void 0 : failedHandle.remove().catch(() => {
-    }));
-  }
-}
-async function showNativeInterstitialAd() {
-  if (!isNativeAdMob()) {
-    return { completed: true };
-  }
-  await initAdMob();
-  let unitIdToShow = preparedInterstitialUnitId;
-  if (!unitIdToShow) {
-    unitIdToShow = await preloadInterstitialAd();
-    if (!unitIdToShow) {
-      return { completed: true };
-    }
-  }
-  preparedInterstitialUnitId = null;
-  let dismissedHandle = null;
-  let failedHandle = null;
-  const waitForClose = new Promise((resolve) => {
-    const finish = () => resolve();
-    void AdMob.addListener(InterstitialAdPluginEvents.Dismissed, finish).then((h) => {
-      dismissedHandle = h;
-    });
-    void AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, finish).then((h) => {
-      failedHandle = h;
-    });
-    setTimeout(finish, 3e4);
-  });
-  try {
-    await AdMob.showInterstitial({
-      adId: unitIdToShow
-    });
-    await waitForClose;
-    void preloadInterstitialAd();
-    return { completed: true };
-  } catch (err) {
-    console.warn("Interstitial show skipped:", err);
-    void preloadInterstitialAd();
-    return { completed: true };
-  } finally {
-    await (dismissedHandle == null ? void 0 : dismissedHandle.remove().catch(() => {
-    }));
-    await (failedHandle == null ? void 0 : failedHandle.remove().catch(() => {
-    }));
-  }
-}
 const AD_DURATION_SECONDS = 4;
 const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
   const nativeMode = isNativeAdMob();
-  const totalSeconds = rewardType === "interstitial" ? 3 : AD_DURATION_SECONDS;
+  const totalSeconds = rewardType === "interstitial" ? 2 : AD_DURATION_SECONDS;
   const [countdown, setCountdown] = reactExports.useState(totalSeconds);
   const [hasClaimed, setHasClaimed] = reactExports.useState(false);
   const [nativeStatus, setNativeStatus] = reactExports.useState("loading");
   const [nativeErrorMsg, setNativeErrorMsg] = reactExports.useState("");
   const onCompleteRef = reactExports.useRef(onComplete);
   const onCloseRef = reactExports.useRef(onClose);
+  const dismissedRef = reactExports.useRef(false);
   reactExports.useEffect(() => {
     onCompleteRef.current = onComplete;
     onCloseRef.current = onClose;
   }, [onComplete, onClose]);
+  reactExports.useEffect(() => {
+    dismissedRef.current = false;
+    return () => {
+      dismissedRef.current = true;
+    };
+  }, []);
+  const handleDismiss = reactExports.useCallback(() => {
+    dismissedRef.current = true;
+    onCloseRef.current();
+  }, []);
   const handleClaimReward = reactExports.useCallback(() => {
-    if (hasClaimed) return;
+    if (hasClaimed || dismissedRef.current) return;
     setHasClaimed(true);
     setTimeout(() => {
-      onCompleteRef.current();
-    }, 150);
+      if (!dismissedRef.current) {
+        onCompleteRef.current();
+      }
+    }, 120);
   }, [hasClaimed]);
   const runNativeAd = reactExports.useCallback(async () => {
+    if (dismissedRef.current) return;
     setNativeStatus("loading");
     setNativeErrorMsg("");
     if (rewardType === "interstitial") {
+      if (!isInterstitialReady()) {
+        onCompleteRef.current();
+        return;
+      }
       await showNativeInterstitialAd();
-      onCompleteRef.current();
+      if (!dismissedRef.current) {
+        onCompleteRef.current();
+      }
       return;
     }
     const result = await showNativeRewardedAd();
+    if (dismissedRef.current) return;
     if (result.completed) {
       onCompleteRef.current();
       return;
@@ -21509,14 +23887,18 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
   const isInterstitial = rewardType === "interstitial";
   const isDoubleEarnings = rewardType === "double_earnings";
   const isConsumableRefill = rewardType === "consumable_refill";
+  const isArcade = rewardType === "arcade_spin" || rewardType === "arcade_spins" || rewardType === "arcade_safe";
   const canClaimEarly = isInterstitial;
   const progressPct = Math.min(100, Math.round((totalSeconds - countdown) / totalSeconds * 100));
   if (nativeMode) {
+    if (isInterstitial) {
+      return null;
+    }
     return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-indigo-200 rounded-2xl p-6 max-w-sm w-full text-slate-900 text-center shadow-2xl flex flex-col items-center gap-4 animate-scaleIn relative", children: [
-      nativeStatus !== "loading" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
         "button",
         {
-          onClick: onClose,
+          onClick: handleDismiss,
           className: "absolute top-3 right-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-lg p-1.5 transition cursor-pointer border border-slate-200",
           "aria-label": "Close",
           children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "w-4 h-4" })
@@ -21529,9 +23911,17 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
       nativeStatus === "loading" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-14 h-14 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-600", children: /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "w-7 h-7 animate-spin" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-base font-extrabold text-slate-900", children: isInterstitial ? "Preparing Transition..." : "Loading Rewarded Ad..." }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-1", children: "Connecting to AdMob network. Please wait a moment." })
-        ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-base font-extrabold text-slate-900", children: "Loading Rewarded Ad..." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-1", children: "Connecting to AdMob network. You can cancel anytime." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          "button",
+          {
+            onClick: handleDismiss,
+            className: "w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer transition",
+            children: "Cancel"
+          }
+        )
       ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-14 h-14 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-700", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-7 h-7" }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
@@ -21542,7 +23932,7 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
-              onClick: onClose,
+              onClick: handleDismiss,
               className: "flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs cursor-pointer transition",
               children: "Cancel"
             }
@@ -21565,12 +23955,12 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
   return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-0 bg-slate-900/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
     "div",
     {
-      className: `bg-white border rounded-2xl p-6 max-w-sm w-full text-slate-900 text-center shadow-2xl flex flex-col items-center gap-4 animate-scaleIn relative overflow-hidden ${isDoubleEarnings ? "border-amber-400" : isConsumableRefill ? "border-violet-300" : "border-indigo-200"}`,
+      className: `bg-white border rounded-2xl p-6 max-w-sm w-full text-slate-900 text-center shadow-2xl flex flex-col items-center gap-4 animate-scaleIn relative overflow-hidden ${isDoubleEarnings ? "border-amber-400" : isConsumableRefill ? "border-violet-300" : isArcade ? "border-rose-300" : "border-indigo-200"}`,
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "button",
           {
-            onClick: onClose,
+            onClick: handleDismiss,
             className: "absolute top-3 right-3 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 rounded-lg p-1.5 transition cursor-pointer z-20 border border-slate-200",
             title: countdown > 0 && !isInterstitial ? "Cancel Ad (No Reward)" : "Close",
             children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "w-4 h-4" })
@@ -21583,25 +23973,25 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           "div",
           {
-            className: `w-14 h-14 rounded-xl flex items-center justify-center border shadow-xs ${isDoubleEarnings ? "bg-amber-100 border-amber-300 text-amber-700 font-mono-num font-extrabold text-xl" : isConsumableRefill ? "bg-violet-100 border-violet-300 text-violet-600" : "bg-emerald-100 border-emerald-300 text-emerald-600"}`,
-            children: rewardType === "energy" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { className: "w-6 h-6" }) : rewardType === "coins" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-6 h-6 text-amber-500" }) : rewardType === "double_earnings" ? "2x" : rewardType === "consumable_refill" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-6 h-6" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Film, { className: "w-6 h-6" })
+            className: `w-14 h-14 rounded-xl flex items-center justify-center border shadow-xs ${isDoubleEarnings ? "bg-amber-100 border-amber-300 text-amber-700 font-mono-num font-extrabold text-xl" : isConsumableRefill ? "bg-violet-100 border-violet-300 text-violet-600" : isArcade ? "bg-rose-100 border-rose-300 text-rose-600" : "bg-emerald-100 border-emerald-300 text-emerald-600"}`,
+            children: rewardType === "energy" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { className: "w-6 h-6" }) : rewardType === "coins" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Coins, { className: "w-6 h-6 text-amber-500" }) : rewardType === "double_earnings" ? "2x" : rewardType === "consumable_refill" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "w-6 h-6" }) : isArcade ? /* @__PURE__ */ jsxRuntimeExports.jsx(Dices, { className: "w-6 h-6" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Film, { className: "w-6 h-6" })
           }
         ),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "h3",
             {
-              className: `text-base font-extrabold uppercase tracking-wider ${isDoubleEarnings ? "text-amber-700" : isConsumableRefill ? "text-violet-700" : "text-slate-900"}`,
-              children: isInterstitial ? "Operational Transition" : isDoubleEarnings ? "2x Revenue Sponsor Ad" : isConsumableRefill ? adDetail || "Consumable Refill Ad" : "Sponsored Grant"
+              className: `text-base font-extrabold uppercase tracking-wider ${isDoubleEarnings ? "text-amber-700" : isConsumableRefill ? "text-violet-700" : isArcade ? "text-rose-700" : "text-slate-900"}`,
+              children: isInterstitial ? "Operational Transition" : isDoubleEarnings ? "2x Revenue Sponsor Ad" : isConsumableRefill ? adDetail || "Consumable Refill Ad" : isArcade ? adDetail || (rewardType === "arcade_spins" ? "Unlock +3 Casino Spins" : "Arcade Bonus Entry") : "Sponsored Grant"
             }
           ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-1", children: isInterstitial ? "Brief logistics sync between contract batches." : isDoubleEarnings ? "Complete the full brief to unlock the 2x payout multiplier." : isConsumableRefill ? "Watch the short sponsor brief to refill +1 consumable charge." : "Complete the full brief to receive your supply grant." })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600 mt-1", children: isInterstitial ? "Brief logistics sync between contract batches." : isDoubleEarnings ? "Complete the full brief to unlock the 2x payout multiplier." : isConsumableRefill ? "Watch the short sponsor brief to refill +1 consumable charge." : isArcade ? rewardType === "arcade_spins" ? "Watch the short sponsor brief to unlock +3 Casino Spins." : "Complete the short sponsor brief to unlock your free Arcade play." : "Complete the full brief to receive your supply grant." })
         ] }),
         !isInterstitial && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-3 text-left", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CirclePlay, { className: "w-5 h-5 text-amber-600" }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col min-w-0", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs font-bold text-slate-900 truncate", children: "Industrial Logistics Showcase" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "Sponsored preview • Refill unlocks at 0s" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] text-slate-500", children: "Sponsored preview · Unlocks at 0s" })
           ] })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col items-center gap-2.5", children: [
@@ -21609,7 +23999,7 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full h-2 bg-slate-200 rounded-full overflow-hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
             "div",
             {
-              className: `h-full transition-all duration-1000 ${isDoubleEarnings ? "bg-amber-400" : isConsumableRefill ? "bg-violet-500" : "bg-emerald-500"}`,
+              className: `h-full transition-all duration-1000 ${isDoubleEarnings ? "bg-amber-400" : isConsumableRefill ? "bg-violet-500" : isArcade ? "bg-rose-500" : "bg-emerald-500"}`,
               style: { width: `${progressPct}%` }
             }
           ) })
@@ -21619,7 +24009,7 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
           {
             onClick: handleClaimReward,
             disabled: !canClaimEarly && countdown > 0,
-            className: `w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition ${!canClaimEarly && countdown > 0 ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : isDoubleEarnings ? "bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm cursor-pointer" : isConsumableRefill ? "bg-violet-600 hover:bg-violet-500 text-white shadow-sm cursor-pointer" : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm cursor-pointer"}`,
+            className: `w-full py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition ${!canClaimEarly && countdown > 0 ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : isDoubleEarnings ? "bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm cursor-pointer" : isConsumableRefill ? "bg-violet-600 hover:bg-violet-500 text-white shadow-sm cursor-pointer" : isArcade ? "bg-rose-600 hover:bg-rose-500 text-white shadow-sm cursor-pointer" : "bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm cursor-pointer"}`,
             children: !canClaimEarly && countdown > 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Lock, { className: "w-3.5 h-3.5" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "tabular-nums", children: [
@@ -21629,7 +24019,7 @@ const AdModal = ({ rewardType, adDetail, onComplete, onClose }) => {
               ] })
             ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { className: "w-4 h-4" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isInterstitial ? countdown > 0 ? "Skip Transition" : "Continue" : isDoubleEarnings ? "Claim 2x Payout" : isConsumableRefill ? "Claim +1 Charge" : "Claim Grant" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: isInterstitial ? countdown > 0 ? "Skip Transition" : "Continue" : isDoubleEarnings ? "Claim 2x Payout" : isConsumableRefill ? "Claim +1 Charge" : isArcade ? "Claim Free Play" : "Claim Grant" })
             ] })
           }
         )
@@ -21661,7 +24051,7 @@ const FloatingText = ({ items, onRemoveItem }) => {
   )) });
 };
 function App() {
-  var _a, _b;
+  var _a, _b, _c, _d, _e;
   const { isOnline, isChecking, recheckConnection } = useOnlineStatus();
   const [gameState, setGameState] = reactExports.useState(() => createInitialState());
   const [activeTab, setActiveTab] = reactExports.useState("factory");
@@ -21713,7 +24103,7 @@ function App() {
           }
         });
         if (incomeThisSecond <= 0) return prev;
-        incomeThisSecond *= 1 + (prev.factoryLevel - 1) * 0.15;
+        incomeThisSecond *= getPlantIncomeMultiplier(prev);
         if (prev.productionSurgeUntil && prev.productionSurgeUntil > Date.now()) {
           incomeThisSecond *= 1.5;
         }
@@ -21751,11 +24141,19 @@ function App() {
   reactExports.useEffect(() => {
     const timer = setInterval(() => {
       setGameState((prev) => {
+        var _a2;
         const { dailyState: newDaily, wasReset } = checkAndResetDailyState(prev.dailyState, prev.level);
-        if (!wasReset) return prev;
+        const todayStr2 = getLocalTodayString();
+        const spinReset = (((_a2 = prev.arcade) == null ? void 0 : _a2.lastSpinResetDate) || "") !== todayStr2;
+        if (!wasReset && !spinReset) return prev;
         return {
           ...prev,
-          dailyState: newDaily
+          dailyState: wasReset ? newDaily : prev.dailyState,
+          arcade: spinReset ? {
+            ...prev.arcade,
+            dailyCasinoSpinsLeft: 3,
+            lastSpinResetDate: todayStr2
+          } : prev.arcade
         };
       });
     }, 1e4);
@@ -21789,6 +24187,8 @@ function App() {
     (m) => m.completed && !m.claimed
   ).length;
   const unfulfilledOrdersCount = gameState.orders.length;
+  const todayStr = getLocalTodayString();
+  const hasFreeWheelSpin = (((_c = gameState.arcade) == null ? void 0 : _c.lastFreeSpinDate) || "") !== todayStr && (((_d = gameState.arcade) == null ? void 0 : _d.lastSpinResetDate) !== todayStr || (((_e = gameState.arcade) == null ? void 0 : _e.dailyCasinoSpinsLeft) ?? 3) > 0);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-screen bg-gradient-to-br from-[#F2F6FF] via-[#FFFDF7] to-[#EFFAF6] text-slate-900 flex flex-col font-sans select-none relative overflow-x-hidden", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       TopBar,
@@ -21847,6 +24247,15 @@ function App() {
           initialSubTab: marketSubTab
         }
       ),
+      activeTab === "arcade" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ArcadeView,
+        {
+          state: gameState,
+          onUpdateState: setGameState,
+          onTriggerRewardedAd: (rewardType, onComplete, adDetail) => setActiveAd({ rewardType, onComplete, adDetail }),
+          onAddFloatingText: addFloatingText
+        }
+      ),
       activeTab === "settings" && /* @__PURE__ */ jsxRuntimeExports.jsx(
         SettingsView,
         {
@@ -21870,7 +24279,8 @@ function App() {
         },
         unclaimedAchievementsCount,
         unfulfilledOrdersCount,
-        unclaimedDailyCount
+        unclaimedDailyCount,
+        hasFreeWheelSpin
       }
     ),
     offlineData && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -21906,11 +24316,27 @@ function App() {
     )
   ] });
 }
-if (!Capacitor.isNativePlatform()) {
+const isIframePreview = (() => {
+  try {
+    return typeof window !== "undefined" && window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+let isNativeApp = false;
+try {
+  isNativeApp = Capacitor.isNativePlatform();
+} catch {
+  isNativeApp = false;
+}
+if (!isNativeApp && !isIframePreview) {
   try {
     registerSW({ immediate: true });
   } catch {
   }
+} else if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister()))).catch(() => {
+  });
 }
 class AppErrorBoundary extends React.Component {
   constructor(props) {
@@ -21925,20 +24351,32 @@ class AppErrorBoundary extends React.Component {
       return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-[#F2F6FF] flex items-center justify-center p-4 text-slate-900", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white border border-indigo-200 rounded-2xl p-5 max-w-sm w-full shadow-lg text-center flex flex-col gap-3", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-base font-extrabold text-slate-900", children: "Workshop Recovery" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-600", children: this.state.errorMessage }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          "button",
-          {
-            onClick: () => {
-              try {
-                localStorage.removeItem("merge_factory_2d_save_v1");
-              } catch {
-              }
-              window.location.reload();
-            },
-            className: "w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs cursor-pointer",
-            children: "Reset Local Save & Reload"
-          }
-        )
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2 w-full", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                window.location.reload();
+              },
+              className: "w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs cursor-pointer",
+              children: "Resume Workshop"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => {
+                try {
+                  localStorage.removeItem("merge_factory_2d_save_v1");
+                } catch {
+                }
+                window.location.reload();
+              },
+              className: "w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer",
+              children: "Reset Local Save & Reload"
+            }
+          )
+        ] })
       ] }) });
     }
     return this.props.children;

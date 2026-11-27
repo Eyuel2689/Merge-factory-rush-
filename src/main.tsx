@@ -5,12 +5,32 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
 import './index.css';
 
-if (import.meta.env.PROD && !Capacitor.isNativePlatform()) {
+const isIframePreview = (() => {
+  try {
+    return typeof window !== 'undefined' && window.self !== window.top;
+  } catch {
+    return true;
+  }
+})();
+
+let isNativeApp = false;
+try {
+  isNativeApp = Capacitor.isNativePlatform();
+} catch {
+  isNativeApp = false;
+}
+
+if (import.meta.env.PROD && !isNativeApp && !isIframePreview) {
   try {
     registerSW({ immediate: true });
   } catch {
     // Ignore SW registration failure in restricted frames
   }
+} else if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then(regs => Promise.all(regs.map(r => r.unregister())))
+    .catch(() => {});
 }
 
 interface ErrorBoundaryState {
@@ -38,19 +58,29 @@ class AppErrorBoundary extends React.Component<{ children: React.ReactNode }, Er
           <div className="bg-white border border-indigo-200 rounded-2xl p-5 max-w-sm w-full shadow-lg text-center flex flex-col gap-3">
             <h2 className="text-base font-extrabold text-slate-900">Workshop Recovery</h2>
             <p className="text-xs text-slate-600">{this.state.errorMessage}</p>
-            <button
-              onClick={() => {
-                try {
-                  localStorage.removeItem('merge_factory_2d_save_v1');
-                } catch {
-                  // Ignore storage failure
-                }
-                window.location.reload();
-              }}
-              className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs cursor-pointer"
-            >
-              Reset Local Save & Reload
-            </button>
+            <div className="flex flex-col gap-2 w-full">
+              <button
+                onClick={() => {
+                  window.location.reload();
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs cursor-pointer"
+              >
+                Resume Workshop
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.removeItem('merge_factory_2d_save_v1');
+                  } catch {
+                    // Ignore storage failure
+                  }
+                  window.location.reload();
+                }}
+                className="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                Reset Local Save & Reload
+              </button>
+            </div>
           </div>
         </div>
       );

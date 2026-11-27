@@ -55,8 +55,8 @@ export function generateDailyMissions(playerLevel: number, dateStr?: string): Da
       icon: '⚙️',
       target: mergeTarget,
       current: 0,
-      coinReward: 95 + playerLevel * 15,
-      gemReward: 2,
+      coinReward: 110 + playerLevel * 15,
+      gemReward: 1,
       energyReward: 6,
       completed: false,
       claimed: false
@@ -69,8 +69,8 @@ export function generateDailyMissions(playerLevel: number, dateStr?: string): Da
       icon: '📦',
       target: orderTarget,
       current: 0,
-      coinReward: 140 + playerLevel * 20,
-      gemReward: 3,
+      coinReward: 160 + playerLevel * 20,
+      gemReward: 1,
       energyReward: 8,
       completed: false,
       claimed: false
@@ -83,8 +83,8 @@ export function generateDailyMissions(playerLevel: number, dateStr?: string): Da
       icon: '🔧',
       target: spawnTarget,
       current: 0,
-      coinReward: 80 + playerLevel * 10,
-      gemReward: 1,
+      coinReward: 95 + playerLevel * 12,
+      gemReward: 0,
       energyReward: 10,
       completed: false,
       claimed: false
@@ -98,8 +98,8 @@ export function generateDailyMissions(playerLevel: number, dateStr?: string): Da
       target: 1,
       targetTier: targetTier,
       current: 0,
-      coinReward: 120 + playerLevel * 20,
-      gemReward: 3,
+      coinReward: 140 + playerLevel * 20,
+      gemReward: 2,
       completed: false,
       claimed: false
     },
@@ -111,8 +111,8 @@ export function generateDailyMissions(playerLevel: number, dateStr?: string): Da
       icon: '🏭',
       target: upgradeTarget,
       current: 0,
-      coinReward: 115 + playerLevel * 18,
-      gemReward: 2,
+      coinReward: 130 + playerLevel * 18,
+      gemReward: 1,
       completed: false,
       claimed: false
     }

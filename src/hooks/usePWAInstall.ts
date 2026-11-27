@@ -65,6 +65,27 @@ async function probeInternetReachability(): Promise<boolean> {
     return false;
   }
 
+  let isNative = false;
+  try {
+    isNative = Capacitor.isNativePlatform();
+  } catch {
+    isNative = false;
+  }
+
+  let isIframePreview = false;
+  try {
+    isIframePreview = typeof window !== 'undefined' && window.self !== window.top;
+  } catch {
+    isIframePreview = true;
+  }
+
+  // Inside embedded preview frames, rely on navigator.onLine and offline/online events
+  // so auth-proxied or frame-throttled probes never falsely lock out the editor preview.
+  // For native Android and standalone web/PWA, actively verify real internet reachability.
+  if (!isNative && isIframePreview) {
+    return true;
+  }
+
   const probe = async (url: string, timeoutMs = 4500): Promise<boolean> => {
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
@@ -83,19 +104,14 @@ async function probeInternetReachability(): Promise<boolean> {
     }
   };
 
-  if (Capacitor.isNativePlatform()) {
-    const firstTry = await probe('https://clients3.google.com/generate_204');
-    if (firstTry) return true;
-    return probe('https://www.google.com/generate_204');
-  }
-
-  // In browser/PWA, verify same-origin server reachability when online
-  return probe(`${window.location.origin}/?online_check=${Date.now()}`);
+  const firstTry = await probe('https://clients3.google.com/generate_204');
+  if (firstTry) return true;
+  return probe('https://www.google.com/generate_204');
 }
 
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
+    typeof navigator !== 'undefined' ? navigator.onLine !== false : true
   );
   const [isChecking, setIsChecking] = useState(false);
 

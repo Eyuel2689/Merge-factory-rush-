@@ -1,6 +1,6 @@
 import React from 'react';
 import { Coins, PlayCircle, Clock, Factory } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { triggerConfetti } from '../utils/confettiSafe';
 
 interface OfflineModalProps {
   coins: number;
@@ -20,7 +20,7 @@ export const OfflineModal: React.FC<OfflineModalProps> = ({
 
   const handleDoubleReward = () => {
     onTriggerRewardedAd('double_earnings', () => {
-      confetti({ particleCount: 55, spread: 70, origin: { y: 0.5 } });
+      triggerConfetti({ particleCount: 55, spread: 70, origin: { y: 0.5 } });
       onClaim(true);
     });
   };

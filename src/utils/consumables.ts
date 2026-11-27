@@ -1,6 +1,7 @@
 import { GameState, ConsumableId } from '../types';
 import { CONSUMABLE_DEFINITIONS, getItemDef, getMaxTierForCategory } from '../data/gameData';
 import { recordDailyMissionProgress } from './dailyMissions';
+import { getPlantIncomeMultiplier } from './economy';
 
 export interface ConsumableUseResult {
   nextState: GameState;
@@ -114,7 +115,7 @@ export function executeConsumableUse(prev: GameState, id: ConsumableId): Consuma
       }
     });
 
-    coinsPerSec *= 1 + (prev.factoryLevel - 1) * 0.15;
+    coinsPerSec *= getPlantIncomeMultiplier(prev);
     const burstCoins = Math.max(250, Math.round(coinsPerSec * 600));
     const now = Date.now();
     const baseUntil = Math.max(now, prev.doubleEarningsUntil || 0);

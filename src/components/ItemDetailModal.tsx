@@ -1,6 +1,6 @@
 import React from 'react';
 import { ItemDefinition, ConsumableDef } from '../types';
-import { X, Sparkles, BookOpen, Wrench, Layers, Coins, PlayCircle } from 'lucide-react';
+import { X, Sparkles, BookOpen, Wrench, Layers, Coins, PlayCircle, Gem } from 'lucide-react';
 
 interface ItemDetailModalProps {
   item?: ItemDefinition;
@@ -8,6 +8,8 @@ interface ItemDetailModalProps {
   consumableStock?: number;
   onRefillConsumable?: () => void;
   onUseConsumable?: () => void;
+  onBuyConsumableCoins?: () => void;
+  onBuyConsumableGems?: () => void;
   onClose: () => void;
 }
 
@@ -17,6 +19,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   consumableStock = 0,
   onRefillConsumable,
   onUseConsumable,
+  onBuyConsumableCoins,
+  onBuyConsumableGems,
   onClose
 }) => {
   if (consumable) {
@@ -74,38 +78,69 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <p className="text-xs text-slate-700 leading-relaxed">{consumable.usageGuide}</p>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
-            {consumableStock > 0 && onUseConsumable && (
-              <button
-                onClick={() => {
-                  onClose();
-                  onUseConsumable();
-                }}
-                className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs shadow-sm active:scale-95 transition cursor-pointer"
-              >
-                Use Charge
-              </button>
+          <div className="flex flex-col gap-2 pt-1">
+            {canRefill && (onBuyConsumableCoins || onBuyConsumableGems) && (
+              <div className="grid grid-cols-2 gap-2">
+                {onBuyConsumableCoins && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onBuyConsumableCoins();
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-amber-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition tabular-nums"
+                  >
+                    <Coins className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Buy · {consumable.coinPrice}</span>
+                  </button>
+                )}
+                {onBuyConsumableGems && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onBuyConsumableGems();
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 text-cyan-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer transition tabular-nums"
+                  >
+                    <Gem className="w-3.5 h-3.5 text-cyan-600" />
+                    <span>Buy · {consumable.gemPrice}</span>
+                  </button>
+                )}
+              </div>
             )}
 
-            {canRefill && onRefillConsumable ? (
-              <button
-                onClick={() => {
-                  onClose();
-                  onRefillConsumable();
-                }}
-                className="flex-[1.3] py-2.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer"
-              >
-                <PlayCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>Refill +1 · Watch Ad</span>
-              </button>
-            ) : (
-              <button
-                onClick={onClose}
-                className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition cursor-pointer"
-              >
-                {canRefill ? 'Close' : 'Full Capacity'}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {consumableStock > 0 && onUseConsumable && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onUseConsumable();
+                  }}
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs shadow-sm active:scale-95 transition cursor-pointer"
+                >
+                  Use Charge
+                </button>
+              )}
+
+              {canRefill && onRefillConsumable ? (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onRefillConsumable();
+                  }}
+                  className="flex-[1.3] py-2.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer"
+                >
+                  <PlayCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Free +1 · Watch Ad</span>
+                </button>
+              ) : (
+                <button
+                  onClick={onClose}
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition cursor-pointer"
+                >
+                  {canRefill ? 'Close' : 'Full Capacity'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -16,11 +16,14 @@ import {
   Coins,
   ClipboardCheck,
   Target,
-  Trophy
+  Trophy,
+  RefreshCw
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import confetti from 'canvas-confetti';
+import { triggerConfetti } from '../utils/confettiSafe';
+import { isInterstitialReady, showNativeInterstitialAd } from '../services/admob';
 import { recordDailyMissionProgress } from '../utils/dailyMissions';
+import { getContractPayoutMultiplier } from '../utils/economy';
 import { DailyMissionsView } from './DailyMissionsView';
 import { AchievementsView } from './AchievementsView';
 
@@ -70,6 +73,37 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     a => !a.claimed && a.currentValue >= a.targetValue
   ).length;
 
+  const vipMultiplier = getContractPayoutMultiplier(state);
+
+  const getContractCoinReward = (order: Order) =>
+    Math.round(Math.max(10, order.coinReward) * vipMultiplier);
+
+  const REFRESH_CONTRACT_COST = 100;
+
+  const handleRefreshContract = (orderId: string) => {
+    if (state.coins < REFRESH_CONTRACT_COST) {
+      soundManager.playSound('error', state.settings.soundFx);
+      showError(`Needs ${REFRESH_CONTRACT_COST} Coins to refresh this contract.`);
+      return;
+    }
+
+    onUpdateState(prev => {
+      if (prev.coins < REFRESH_CONTRACT_COST) return prev;
+      return {
+        ...prev,
+        coins: prev.coins - REFRESH_CONTRACT_COST,
+        orders: prev.orders.map(o =>
+          o.id === orderId
+            ? generateRandomOrder(`ord_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, prev.level)
+            : o
+        )
+      };
+    });
+
+    soundManager.playSound('click', state.settings.soundFx);
+    onAddFloatingText('-100 Coins · New Contract', window.innerWidth / 2, window.innerHeight * 0.45, '#0284C7');
+  };
+
   const handleFulfillOrder = (orderId: string, earningsMultiplier: 1 | 2 = 1) => {
     const order = state.orders.find(o => o.id === orderId);
     if (!order) return;
@@ -81,16 +115,31 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     }
 
     const fulfillAction = () => {
-      const baseCoins = Math.round(order.coinReward);
-      const totalCoinsEarned = baseCoins * earningsMultiplier;
-      const totalGemsEarned = (order.gemReward || 0) * earningsMultiplier;
-      const willLevelUp = state.xp + order.xpReward >= state.xpToNextLevel;
+      let didFulfill = false;
+      let shippedCoins = getContractCoinReward(order) * earningsMultiplier;
+      let shippedGems = (order.gemReward || 0) * earningsMultiplier;
+      let leveledUp = false;
 
       onUpdateState(prev => {
         const targetOrder = prev.orders.find(o => o.id === orderId);
         if (!targetOrder) return prev;
 
         const reqs = getOrderRequirements(targetOrder);
+
+        // Verify inside functional updater to prevent rapid double-tap races
+        const canStillFulfill = reqs.every(req => {
+          const reqCat = req.category || 'wood';
+          const bCount = prev.board.filter(
+            c => c.item && c.item.tier === req.itemTier && (c.item.category || 'wood') === reqCat
+          ).length;
+          const iCount = prev.inventory.filter(
+            i => i.tier === req.itemTier && (i.category || 'wood') === reqCat
+          ).length;
+          return bCount + iCount >= req.quantity;
+        });
+
+        if (!canStillFulfill) return prev;
+
         let nextBoard = [...prev.board];
         let nextInventory = [...prev.inventory];
 
@@ -117,12 +166,16 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           }
         });
 
-        const orderCoins = Math.round(targetOrder.coinReward) * earningsMultiplier;
+        const prevVipMult = getContractPayoutMultiplier(prev);
+        const orderCoins = Math.round(Math.max(10, targetOrder.coinReward) * prevVipMult) * earningsMultiplier;
         const orderXp = targetOrder.xpReward;
         const orderGems = (targetOrder.gemReward || 0) * earningsMultiplier;
 
+        shippedCoins = orderCoins;
+        shippedGems = orderGems;
+
         const newOrders = prev.orders.map(o =>
-          o.id === orderId ? generateRandomOrder(`ord_${Date.now()}`, prev.level) : o
+          o.id === orderId ? generateRandomOrder(`ord_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, prev.level) : o
         );
 
         const nextXP = prev.xp + orderXp;
@@ -132,6 +185,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         if (nextXP >= nextXPToNext) {
           nextLevel += 1;
           nextXPToNext = Math.round(nextXPToNext * 1.55);
+          leveledUp = true;
         }
 
         const totalOrders = prev.stats.totalOrdersCompleted + 1;
@@ -144,6 +198,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
         let nextDaily = recordDailyMissionProgress(prev.dailyState, 'orders', 1);
         nextDaily = recordDailyMissionProgress(nextDaily, 'earn_coins', orderCoins);
+
+        didFulfill = true;
 
         return {
           ...prev,
@@ -165,12 +221,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         };
       });
 
-      soundManager.playSound(willLevelUp || earningsMultiplier === 2 ? 'upgrade' : 'order', state.settings.soundFx);
-      confetti({ particleCount: earningsMultiplier === 2 ? 75 : 45, spread: 70, origin: { y: 0.5 } });
+      if (!didFulfill) {
+        // State updater handles actual validation asynchronously on React commit; trigger audio/feedback immediately for responsive UX
+        soundManager.playSound(earningsMultiplier === 2 ? 'upgrade' : 'order', state.settings.soundFx);
+      } else {
+        soundManager.playSound(leveledUp || earningsMultiplier === 2 ? 'upgrade' : 'order', state.settings.soundFx);
+      }
+
+      triggerConfetti({ particleCount: earningsMultiplier === 2 ? 75 : 45, spread: 70, origin: { y: 0.5 } });
       onAddFloatingText(
         earningsMultiplier === 2
-          ? `2x · +${totalCoinsEarned.toLocaleString()} Coins${totalGemsEarned > 0 ? ` +${totalGemsEarned} Gems` : ''}`
-          : `+${totalCoinsEarned.toLocaleString()} Coins${totalGemsEarned > 0 ? ` +${totalGemsEarned} Gems` : ''}`,
+          ? `2x · +${shippedCoins.toLocaleString()} Coins${shippedGems > 0 ? ` +${shippedGems} Gems` : ''}`
+          : `+${shippedCoins.toLocaleString()} Coins${shippedGems > 0 ? ` +${shippedGems} Gems` : ''}`,
         window.innerWidth / 2,
         window.innerHeight / 2,
         '#D97706'
@@ -179,10 +241,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
     if (earningsMultiplier === 2) {
       onTriggerRewardedAd('double_earnings', fulfillAction);
-    } else if (state.stats.totalOrdersCompleted > 0 && state.stats.totalOrdersCompleted % 3 === 0) {
-      onTriggerInterstitialAd(fulfillAction);
     } else {
+      // Always ship orders immediately face-to-face without trapping the user behind a loading overlay
       fulfillAction();
+      const nextCount = state.stats.totalOrdersCompleted + 1;
+      if (nextCount > 0 && nextCount % 4 === 0 && isInterstitialReady()) {
+        setTimeout(() => {
+          void showNativeInterstitialAd();
+        }, 350);
+      }
     }
   };
 
@@ -284,7 +351,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             {state.orders.map(order => {
               const reqs = getOrderRequirements(order);
               const ready = isOrderReady(order);
-              const baseCoins = Math.round(order.coinReward);
+              const baseCoins = getContractCoinReward(order);
               const baseGems = order.gemReward || 0;
 
               return (
@@ -311,7 +378,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           {order.customerName}
                         </span>
                         <span className="text-[11px] text-slate-500 font-medium">
-                          {order.badge || 'Standard Contract'} · #{order.id.substring(order.id.length - 4)}
+                          {order.badge || 'Standard Contract'} · #{String(order.id || '0000').slice(-4)}
                         </span>
                       </div>
                     </div>
@@ -366,7 +433,16 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleRefreshContract(order.id)}
+                      title={`Replace contract for ${REFRESH_CONTRACT_COST} Coins`}
+                      className="py-2.5 px-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition shrink-0 tabular-nums"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>{REFRESH_CONTRACT_COST}</span>
+                    </button>
+
                     <button
                       onClick={() => handleFulfillOrder(order.id, 1)}
                       disabled={!ready}
@@ -377,20 +453,20 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       }`}
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                      <span>Deliver 1x</span>
+                      <span>Deliver</span>
                     </button>
 
                     <button
                       onClick={() => handleFulfillOrder(order.id, 2)}
                       disabled={!ready}
-                      className={`flex-[1.35] py-2.5 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 tabular-nums ${
+                      className={`flex-[1.3] py-2.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition active:scale-95 tabular-nums ${
                         ready
                           ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-sm cursor-pointer'
                           : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
                       }`}
                     >
                       <PlayCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Watch Ad · 2x (+{baseCoins * 2})</span>
+                      <span>2x Ad (+{baseCoins * 2})</span>
                     </button>
                   </div>
                 </div>

@@ -44,9 +44,34 @@ export interface ConsumableDef {
   fullDesc: string;
   usageGuide: string;
   maxStock: number;
+  coinPrice: number;
+  gemPrice: number;
   badge: string;
   bgGradient: string;
   borderClass: string;
+}
+
+export type PremiumPerkId =
+  | 'goldenTurbineLevel'
+  | 'energyCoreUpgrades'
+  | 'vaultExpansions'
+  | 'vipContractLevel';
+
+export interface PremiumPerks {
+  goldenTurbineLevel: number;
+  energyCoreUpgrades: number;
+  vaultExpansions: number;
+  vipContractLevel: number;
+}
+
+export interface ArcadeState {
+  lastFreeSpinDate: string;
+  dailyCasinoSpinsLeft: number;
+  lastSpinResetDate: string;
+  totalSpins: number;
+  totalGamesPlayed: number;
+  totalArcadeCoinsWon: number;
+  biggestWin: number;
 }
 
 export interface BoardItem {
@@ -127,7 +152,7 @@ export interface FloatingTextData {
   color: string;
 }
 
-export type BoardTheme = 'amber' | 'emerald' | 'purple' | 'ocean';
+export type BoardTheme = 'amber' | 'emerald' | 'purple' | 'ocean' | 'obsidian';
 export type PlayMode = 'standard' | 'relaxed' | 'express';
 
 export type DailyMissionType =
@@ -206,6 +231,10 @@ export interface GameState {
   };
   
   consumables: Record<ConsumableId, number>;
+  premiumPerks: PremiumPerks;
+  ownedIapIds: string[];
+  unlockedThemes: BoardTheme[];
+  arcade: ArcadeState;
   doubleEarningsUntil?: number;
   productionSurgeUntil?: number;
   lastSavedTimestamp: number;

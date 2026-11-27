@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { GameState } from '../types';
 import { Trophy, CheckCircle, Target } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import confetti from 'canvas-confetti';
+import { triggerConfetti } from '../utils/confettiSafe';
 import { DailyMissionsView } from './DailyMissionsView';
 
 interface AchievementsViewProps {
@@ -33,7 +33,7 @@ export const AchievementsView: React.FC<AchievementsViewProps> = ({
     if (!ach || ach.claimed || ach.currentValue < ach.targetValue) return;
 
     soundManager.playSound('upgrade', state.settings.soundFx);
-    confetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
+    triggerConfetti({ particleCount: 50, spread: 70, origin: { y: 0.5 } });
 
     onUpdateState(prev => {
       const nextAchievements = prev.achievements.map(a => (a.id === achievementId ? { ...a, claimed: true } : a));

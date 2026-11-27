@@ -19,6 +19,7 @@ import {
   CONSUMABLE_DEFINITIONS
 } from '../data/gameData';
 import { executeConsumableUse } from '../utils/consumables';
+import { getContractPayoutMultiplier } from '../utils/economy';
 import {
   executeBoardTap,
   executeBoardDrop,
@@ -50,7 +51,7 @@ import {
   Check
 } from 'lucide-react';
 import { soundManager } from '../utils/audio';
-import confetti from 'canvas-confetti';
+import { triggerConfetti } from '../utils/confettiSafe';
 import { recordDailyMissionProgress } from '../utils/dailyMissions';
 import { DailyMissionsModal } from './DailyMissionsModal';
 import { OrderRewardModal } from './OrderRewardModal';
@@ -117,6 +118,10 @@ const BOARD_THEME_FRAMES: Record<string, { shell: string; tray: string }> = {
   ocean: {
     shell: 'border-sky-200/90 bg-white/95',
     tray: 'bg-gradient-to-b from-sky-100/75 to-cyan-100/70 border-sky-200/90'
+  },
+  obsidian: {
+    shell: 'border-amber-400/90 bg-slate-900 text-white',
+    tray: 'bg-gradient-to-b from-slate-800 to-slate-950 border-amber-400/70'
   }
 };
 
@@ -237,7 +242,7 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
       onAddFloatingText(`T${result.mergedItem.tier}! +${result.coinReward}`, fx, fy, '#059669');
 
       if (result.mergedItem.tier >= 5) {
-        confetti({ particleCount: 38, spread: 52, origin: { y: 0.55 } });
+        triggerConfetti({ particleCount: 38, spread: 52, origin: { y: 0.55 } });
       }
       showNotice(`${result.message} +${result.coinReward} Coins`, 'success');
     },
@@ -526,8 +531,10 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
     setPendingOrder(order);
   };
 
+  const vipMultiplier = getContractPayoutMultiplier(state);
+
   const executeOrderFulfillment = (order: Order, earningsMultiplier: 1 | 2) => {
-    const totalCoinsEarned = Math.round(order.coinReward) * earningsMultiplier;
+    const totalCoinsEarned = Math.round(order.coinReward * vipMultiplier) * earningsMultiplier;
     const gemsEarned = (order.gemReward || 0) * earningsMultiplier;
     const willLevelUp = state.xp + order.xpReward >= state.xpToNextLevel;
 
@@ -571,12 +578,15 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
         }
       });
 
-      const orderCoins = Math.round(targetOrder.coinReward) * earningsMultiplier;
+      const prevVipMult = getContractPayoutMultiplier(prev);
+      const orderCoins = Math.round(targetOrder.coinReward * prevVipMult) * earningsMultiplier;
       const orderXp = targetOrder.xpReward;
       const orderGems = (targetOrder.gemReward || 0) * earningsMultiplier;
 
       const newOrders = prev.orders.map(o =>
-        o.id === targetOrder.id ? generateRandomOrder(`ord_${Date.now()}`, prev.level) : o
+        o.id === targetOrder.id
+          ? generateRandomOrder(`ord_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, prev.level)
+          : o
       );
 
       const nextXP = prev.xp + orderXp;
@@ -620,7 +630,7 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
     if (willLevelUp) {
       soundManager.playSound('upgrade', state.settings.soundFx);
     }
-    confetti({ particleCount: 55, spread: 60, origin: { y: 0.6 } });
+    triggerConfetti({ particleCount: 55, spread: 60, origin: { y: 0.6 } });
     onAddFloatingText(
       `+${totalCoinsEarned.toLocaleString()} Coins${gemsEarned ? ` +${gemsEarned} 💎` : ''}`,
       window.innerWidth / 2,
@@ -814,7 +824,7 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
 
     setSelectedCellIndex(null);
     soundManager.playSound('upgrade', state.settings.soundFx);
-    confetti({ particleCount: 28, spread: 45, origin: { y: 0.55 } });
+    triggerConfetti({ particleCount: 28, spread: 45, origin: { y: 0.55 } });
     showNotice(`Activated ${special.label}!`, 'success');
   };
 
@@ -832,7 +842,7 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
     }
     soundManager.playSound('upgrade', state.settings.soundFx);
     if (preview.triggerConfetti) {
-      confetti({ particleCount: 36, spread: 50, origin: { y: 0.58 } });
+      triggerConfetti({ particleCount: 36, spread: 50, origin: { y: 0.58 } });
     }
     if (preview.floatingText) {
       onAddFloatingText(
@@ -1008,7 +1018,13 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
         {/* Table Header */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <h2 className="text-sm font-black tracking-tight text-slate-900">Merge Table</h2>
+            <h2
+              className={`text-sm font-black tracking-tight ${
+                state.settings?.boardTheme === 'obsidian' ? 'text-amber-200' : 'text-slate-900'
+              }`}
+            >
+              Merge Table
+            </h2>
             <span
               className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full tabular-nums ${
                 readyPairs.length > 0
@@ -1508,7 +1524,10 @@ export const FactoryBoard: React.FC<FactoryBoardProps> = ({
 
       {pendingOrder && (
         <OrderRewardModal
-          order={pendingOrder}
+          order={{
+            ...pendingOrder,
+            coinReward: Math.round(pendingOrder.coinReward * vipMultiplier)
+          }}
           onClaimNormal={() => {
             const target = pendingOrder;
             setPendingOrder(null);

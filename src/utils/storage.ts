@@ -1,6 +1,7 @@
-import { GameState } from '../types';
+import { GameState, BoardTheme } from '../types';
 import { createInitialState } from '../data/gameData';
 import { checkAndResetDailyState } from './dailyMissions';
+import { getPlantIncomeMultiplier, getLocalTodayString } from './economy';
 
 const SAVE_KEY = 'merge_factory_2d_save_v1';
 
@@ -41,8 +42,16 @@ export function loadGame(): { state: GameState; offlineCoins: number; offlineSec
         }
       });
 
-      // Apply factory level boost (+15% per factory level)
-      coinsPerSec *= 1 + ((savedState.factoryLevel || 1) - 1) * 0.15;
+      coinsPerSec *= getPlantIncomeMultiplier({
+        factoryLevel: savedState.factoryLevel || 1,
+        premiumPerks: savedState.premiumPerks || {
+          goldenTurbineLevel: 0,
+          energyCoreUpgrades: 0,
+          vaultExpansions: 0,
+          vipContractLevel: 0
+        },
+        ownedIapIds: Array.isArray(savedState.ownedIapIds) ? savedState.ownedIapIds : []
+      });
       offlineCoins = Math.floor(coinsPerSec * cappedSeconds);
     }
 
@@ -151,6 +160,19 @@ export function loadGame(): { state: GameState; offlineCoins: number; offlineSec
 
     const { isVip: _ignoredVip, adsRemoved: _ignoredAds, ...cleanSaved } = savedState;
 
+    const todayStr = getLocalTodayString();
+    const savedArcade = savedState.arcade;
+    const spinResetNeeded = !savedArcade || savedArcade.lastSpinResetDate !== todayStr;
+
+    const validThemes: BoardTheme[] = ['amber', 'emerald', 'purple', 'ocean', 'obsidian'];
+    const rawUnlocked = Array.isArray(savedState.unlockedThemes)
+      ? savedState.unlockedThemes.filter((t): t is BoardTheme => validThemes.includes(t))
+      : [];
+    const unlockedThemes = Array.from(new Set<BoardTheme>(['amber', 'emerald', ...rawUnlocked]));
+    const requestedTheme = savedState.settings?.boardTheme;
+    const safeBoardTheme: BoardTheme =
+      requestedTheme && unlockedThemes.includes(requestedTheme) ? requestedTheme : 'amber';
+
     const mergedState: GameState = {
       ...initialState,
       ...cleanSaved,
@@ -174,6 +196,22 @@ export function loadGame(): { state: GameState; offlineCoins: number; offlineSec
         ...initialState.consumables,
         ...(savedState.consumables || {})
       },
+      premiumPerks: {
+        ...initialState.premiumPerks,
+        ...(savedState.premiumPerks || {})
+      },
+      ownedIapIds: Array.isArray(savedState.ownedIapIds)
+        ? savedState.ownedIapIds.filter((id): id is string => typeof id === 'string')
+        : [],
+      unlockedThemes,
+      arcade: {
+        ...initialState.arcade,
+        ...(savedArcade || {}),
+        dailyCasinoSpinsLeft: spinResetNeeded
+          ? 3
+          : Math.max(0, Number(savedArcade?.dailyCasinoSpinsLeft ?? 3)),
+        lastSpinResetDate: todayStr
+      },
       lastSavedTimestamp: now,
       stats: {
         ...initialState.stats,
@@ -182,6 +220,7 @@ export function loadGame(): { state: GameState; offlineCoins: number; offlineSec
       settings: {
         ...initialState.settings,
         ...(savedState.settings || {}),
+        boardTheme: safeBoardTheme,
         playMode: savedState.settings?.playMode || initialState.settings.playMode,
         showFloatingRewards:
           savedState.settings?.showFloatingRewards ?? initialState.settings.showFloatingRewards,
@@ -214,6 +253,10 @@ export function saveGame(state: GameState): void {
 }
 
 export function resetGameSave(): GameState {
-  localStorage.removeItem(SAVE_KEY);
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+    // Ignore storage failures in restricted frames
+  }
   return createInitialState();
 }

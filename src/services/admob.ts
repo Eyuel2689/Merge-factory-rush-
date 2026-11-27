@@ -21,12 +21,32 @@ export interface NativeAdResult {
 }
 
 const IS_TEST_MODE = import.meta.env.VITE_ADMOB_TEST_MODE === 'true';
+const PREPARE_TIMEOUT_MS = 8000;
+const INTERSTITIAL_CLOSE_TIMEOUT_MS = 10000;
 
 let initPromise: Promise<void> | null = null;
 let rewardedLoadPromise: Promise<string | null> | null = null;
 let interstitialLoadPromise: Promise<string | null> | null = null;
 let preparedRewardedUnitId: string | null = null;
 let preparedInterstitialUnitId: string | null = null;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, timeoutMessage: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(timeoutMessage));
+    }, ms);
+    promise.then(
+      val => {
+        clearTimeout(timer);
+        resolve(val);
+      },
+      err => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+}
 
 export function isNativeAdMob(): boolean {
   try {
@@ -36,28 +56,42 @@ export function isNativeAdMob(): boolean {
   }
 }
 
+export function isInterstitialReady(): boolean {
+  if (!isNativeAdMob()) return false;
+  return Boolean(preparedInterstitialUnitId);
+}
+
+export function isRewardedReady(): boolean {
+  if (!isNativeAdMob()) return false;
+  return Boolean(preparedRewardedUnitId);
+}
+
 export async function initAdMob(): Promise<void> {
   if (!isNativeAdMob()) return;
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
     try {
-      await AdMob.initialize({
-        initializeForTesting: IS_TEST_MODE
-      });
+      await withTimeout(
+        AdMob.initialize({
+          initializeForTesting: IS_TEST_MODE
+        }),
+        6000,
+        'AdMob initialization timed out'
+      );
 
       // Run UMP consent with a short timeout so slow network responses do not delay ad preloading
       try {
         const consentInfo = await Promise.race([
           AdMob.requestConsentInfo(),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), 3000))
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 2500))
         ]);
         if (
           consentInfo &&
           consentInfo.isConsentFormAvailable &&
           consentInfo.status === AdmobConsentStatus.REQUIRED
         ) {
-          await AdMob.showConsentForm();
+          await withTimeout(AdMob.showConsentForm(), 8000, 'Consent form timed out').catch(() => {});
         }
       } catch (consentErr) {
         console.warn('AdMob UMP consent check skipped:', consentErr);
@@ -84,11 +118,15 @@ export async function preloadRewardedAd(): Promise<string | null> {
   rewardedLoadPromise = (async () => {
     try {
       await initAdMob();
-      const info = await AdMob.prepareRewardVideoAd({
-        adId: ADMOB_CONFIG.rewardedAdUnitId,
-        isTesting: IS_TEST_MODE,
-        immersiveMode: true
-      });
+      const info = await withTimeout(
+        AdMob.prepareRewardVideoAd({
+          adId: ADMOB_CONFIG.rewardedAdUnitId,
+          isTesting: IS_TEST_MODE,
+          immersiveMode: true
+        }),
+        PREPARE_TIMEOUT_MS,
+        'AdMob took too long to respond. Please check your connection and try again.'
+      );
       preparedRewardedUnitId = info?.adUnitId || ADMOB_CONFIG.rewardedAdUnitId;
       lastRewardedLoadError = null;
       return preparedRewardedUnitId;
@@ -114,11 +152,15 @@ export async function preloadInterstitialAd(): Promise<string | null> {
   interstitialLoadPromise = (async () => {
     try {
       await initAdMob();
-      const info = await AdMob.prepareInterstitial({
-        adId: ADMOB_CONFIG.interstitialAdUnitId,
-        isTesting: IS_TEST_MODE,
-        immersiveMode: true
-      });
+      const info = await withTimeout(
+        AdMob.prepareInterstitial({
+          adId: ADMOB_CONFIG.interstitialAdUnitId,
+          isTesting: IS_TEST_MODE,
+          immersiveMode: true
+        }),
+        PREPARE_TIMEOUT_MS,
+        'Interstitial preload timed out'
+      );
       preparedInterstitialUnitId = info?.adUnitId || ADMOB_CONFIG.interstitialAdUnitId;
       return preparedInterstitialUnitId;
     } catch (err) {
@@ -213,30 +255,34 @@ export async function showNativeInterstitialAd(): Promise<NativeAdResult> {
     return { completed: true };
   }
 
-  await initAdMob();
-
-  let unitIdToShow = preparedInterstitialUnitId;
+  // Never block gameplay waiting to download an interstitial: only show if already preloaded
+  const unitIdToShow = preparedInterstitialUnitId;
   if (!unitIdToShow) {
-    unitIdToShow = await preloadInterstitialAd();
-    if (!unitIdToShow) {
-      return { completed: true };
-    }
+    void preloadInterstitialAd();
+    return { completed: true };
   }
 
   preparedInterstitialUnitId = null;
 
   let dismissedHandle: PluginListenerHandle | null = null;
   let failedHandle: PluginListenerHandle | null = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
 
   const waitForClose = new Promise<void>(resolve => {
-    const finish = () => resolve();
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve();
+    };
     void AdMob.addListener(InterstitialAdPluginEvents.Dismissed, finish).then(h => {
       dismissedHandle = h;
     });
     void AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, finish).then(h => {
       failedHandle = h;
     });
-    setTimeout(finish, 30000);
+    timer = setTimeout(finish, INTERSTITIAL_CLOSE_TIMEOUT_MS);
   });
 
   try {
@@ -251,6 +297,7 @@ export async function showNativeInterstitialAd(): Promise<NativeAdResult> {
     void preloadInterstitialAd();
     return { completed: true };
   } finally {
+    if (timer) clearTimeout(timer);
     await dismissedHandle?.remove().catch(() => {});
     await failedHandle?.remove().catch(() => {});
   }

@@ -3,7 +3,8 @@ import { GameState } from '../types';
 import { Cpu, Users, ArrowUpCircle, Zap, ShieldCheck, AlertCircle, PlayCircle, Clock, Flame } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { recordDailyMissionProgress } from '../utils/dailyMissions';
-import confetti from 'canvas-confetti';
+import { triggerConfetti } from '../utils/confettiSafe';
+import { getPlantIncomeMultiplier, IAP_SKU_GOLDEN_TURBINE } from '../utils/economy';
 
 interface MachinesViewProps {
   state: GameState;
@@ -52,7 +53,7 @@ export const MachinesView: React.FC<MachinesViewProps> = ({
         doubleEarningsUntil: nextUntil
       }));
       soundManager.playSound('upgrade', state.settings.soundFx);
-      confetti({ particleCount: 55, spread: 70, origin: { y: 0.45 } });
+      triggerConfetti({ particleCount: 55, spread: 70, origin: { y: 0.45 } });
       if (onAddFloatingText) {
         onAddFloatingText('2x Machine Output Active', window.innerWidth / 2, window.innerHeight / 2, '#D97706');
       }
@@ -63,6 +64,9 @@ export const MachinesView: React.FC<MachinesViewProps> = ({
     setErrorMsg(msg);
     setTimeout(() => setErrorMsg(null), 2500);
   };
+
+  const turbineLevel = state.premiumPerks?.goldenTurbineLevel || 0;
+  const hasTurbineCharter = Boolean(state.ownedIapIds?.includes(IAP_SKU_GOLDEN_TURBINE));
 
   const computeTotalIncomePerSec = () => {
     let coinsPerSec = 0;
@@ -76,7 +80,7 @@ export const MachinesView: React.FC<MachinesViewProps> = ({
         coinsPerSec += machineRate;
       }
     });
-    coinsPerSec *= 1 + (state.factoryLevel - 1) * 0.15;
+    coinsPerSec *= getPlantIncomeMultiplier(state);
     if (isSurgeActive) coinsPerSec *= 1.5;
     if (isBoostActive) coinsPerSec *= 2;
     return coinsPerSec.toFixed(2);
@@ -184,6 +188,8 @@ export const MachinesView: React.FC<MachinesViewProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-[11px] text-slate-600 flex-wrap font-medium">
               <span>Plant Output</span>
+              {turbineLevel > 0 && <span className="text-amber-700 font-bold">· +{turbineLevel * 25}% Turbine</span>}
+              {hasTurbineCharter && <span className="text-violet-700 font-bold">· 2x Charter</span>}
               {isBoostActive && <span className="text-amber-700 font-bold">· 2x Ad</span>}
               {isSurgeActive && <span className="text-sky-700 font-bold">· +50% Tooling</span>}
             </div>
